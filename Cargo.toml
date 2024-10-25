@@ -1,6 +1,6 @@
 [package]
     name        = "bonnie"
-    version     = "0.3.2"
+    version     = "0.3.3"
     authors     = ["arctic_hen7 <arctic_hen7@pm.me>"]
     edition     = "2018"
     description = "Simple, cross-platform, and fast command aliases with superpowers."
