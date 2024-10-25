@@ -1,3 +1,18 @@
+## Why fork "bonnie" and rename it to "bx"?
+
+-   bx is a lot shorter as a command name
+    => I see myself reaching for "bun" as a script runner too often just because it's 3 letters long.
+    Problem with package.jsons as script runner: THEY F\*IN DON'T SUPPORT COMMENTS!!! -\_-
+    Also, they do a very bad job at handling env vars and more advanced stuff, that bonnie handles very well!
+-   bx can stand for "bonnie execute" :D
+-   bx also can stand for "Benny execute" which fits my name :D
+
+## What's the plan?
+
+I forked this for my own usage, but since I'm currently starting to dabble in the rust world, I want to contribute back to the original project if I manage some meaningful improvements!
+
+---
+
 <h1 align="center">Bonnie</h1>
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
