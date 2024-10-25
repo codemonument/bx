@@ -4,12 +4,18 @@
     => I see myself reaching for "bun" as a script runner too often just because it's 3 letters long.
     Problem with package.jsons as script runner: THEY F\*IN DON'T SUPPORT COMMENTS!!! -\_-
     Also, they do a very bad job at handling env vars and more advanced stuff, that bonnie handles very well!
+
+## Why "bx"?
+
+-   bx seems to be a fairly unused command name in the linux world (judging by a quick google search)
 -   bx can stand for "bonnie execute" :D
 -   bx also can stand for "Benny execute" which fits my name :D
 
 ## What's the plan?
 
 I forked this for my own usage, but since I'm currently starting to dabble in the rust world, I want to contribute back to the original project if I manage some meaningful improvements!
+
+## The following part is the original README.md of [bonnie github](https://github.com/arctic-hen7/bonnie)
 
 ---
 
