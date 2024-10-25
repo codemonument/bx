@@ -1,27 +1,31 @@
 [package]
-name = "bonnie"
-version = "0.3.2"
-authors = ["arctic_hen7 <arctic_hen7@pm.me>"]
-edition = "2018"
-description = "Simple, cross-platform, and fast command aliases with superpowers."
-license = "MIT"
-repository = "https://github.com/arctic-hen7/bonnie"
-keywords = ["cli", "automation"]
-categories = ["command-line-utilities"]
+    name        = "bonnie"
+    version     = "0.3.2"
+    authors     = ["arctic_hen7 <arctic_hen7@pm.me>"]
+    edition     = "2018"
+    description = "Simple, cross-platform, and fast command aliases with superpowers."
+    license     = "MIT"
+    repository  = "https://github.com/arctic-hen7/bonnie"
+    keywords    = ["cli", "automation"]
+    categories  = ["command-line-utilities"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+    # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-toml = "0.5"
-serde = { version = "1", features = ["derive"]  }
-serde_json = "1"
-dotenv = "0.15"
-regex = "1.5"
-home = "0.5"
+    toml       = "0.5"
+    serde      = { version = "1", features = ["derive"] }
+    serde_json = "1"
+    dotenv     = "0.15"
+    regex      = "1.5"
+    home       = "0.5"
 
 [lib]
-name = "lib"
+    name = "lib"
 
 [[bin]]
-name = "bonnie"
-path = "src/bin/main.rs"
+    name = "bonnie"
+    path = "src/bin/main.rs"
+
+[[bin]]
+    name = "bx"
+    path = "src/bin/main.rs"
