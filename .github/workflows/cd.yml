@@ -4,6 +4,8 @@ on:
     push:
         tags:
             - "v*"
+    # allow manually triggering the jobs (needed to populate forked releases)
+    workflow_dispatch:
 
 jobs:
     # This builds and releases for Windows, MacOS, and Linux
