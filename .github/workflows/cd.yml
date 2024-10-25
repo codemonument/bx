@@ -30,7 +30,7 @@ jobs:
                       artifact_name_2: bx.exe
                       asset_name_2: bx-windows-amd64
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
             - name: Build
               run: cargo build --release --locked
 
@@ -56,7 +56,7 @@ jobs:
     musl-build-release:
         runs-on: ubuntu-latest # We cross-compile from Ubuntu
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
             - name: Install musl toolchain
               run: rustup target add x86_64-unknown-linux-musl
             - name: Build
