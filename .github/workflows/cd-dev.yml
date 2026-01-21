@@ -12,20 +12,14 @@ jobs:
             matrix:
                 include:
                     - os: ubuntu-latest
-                      artifact_name: bonnie
-                      asset_name: bonnie-linux-amd64
-                      artifact_name_2: bx
-                      asset_name_2: bx-linux-amd64
+                      artifact_name: bx
+                      asset_name: bx-linux-amd64
                     - os: macos-latest
-                      artifact_name: bonnie
-                      asset_name: bonnie-macos-amd64
-                      artifact_name_2: bx
-                      asset_name_2: bx-macos-amd64
+                      artifact_name: bx
+                      asset_name: bx-macos-amd64
                     - os: windows-latest
-                      artifact_name: bonnie.exe
-                      asset_name: bonnie-windows-amd64
-                      artifact_name_2: bx.exe
-                      asset_name_2: bx-windows-amd64
+                      artifact_name: bx.exe
+                      asset_name: bx-windows-amd64
         steps:
             - uses: actions/checkout@v4
             - name: Build

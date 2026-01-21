@@ -29,9 +29,5 @@
     name = "lib"
 
 [[bin]]
-    name = "bonnie"
-    path = "src/bin/main.rs"
-
-[[bin]]
     name = "bx"
     path = "src/bin/main.rs"
