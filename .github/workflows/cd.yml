@@ -15,35 +15,48 @@ jobs:
             matrix:
                 include:
                     - os: ubuntu-latest
+                      target_dir: release
                       artifact_name: bonnie
                       asset_name: bonnie-linux-amd64
                       artifact_name_2: bx
                       asset_name_2: bx-linux-amd64
-                    - os: macos-13
+                    - os: macos-14
+                      target: x86_64-apple-darwin
+                      target_dir: x86_64-apple-darwin/release
                       artifact_name: bonnie
                       asset_name: bonnie-macos-amd64
                       artifact_name_2: bx
                       asset_name_2: bx-macos-amd64
                     - os: macos-14
+                      target: aarch64-apple-darwin
+                      target_dir: aarch64-apple-darwin/release
                       artifact_name: bonnie
                       asset_name: bonnie-macos-arm64
                       artifact_name_2: bx
                       asset_name_2: bx-macos-arm64
                     - os: windows-latest
+                      target_dir: release
                       artifact_name: bonnie.exe
                       asset_name: bonnie-windows-amd64
                       artifact_name_2: bx.exe
                       asset_name_2: bx-windows-amd64
         steps:
             - uses: actions/checkout@v4
-            - name: Build
+            - name: Install Rust target (macOS cross-compile)
+              if: matrix.target != ''
+              run: rustup target add ${{ matrix.target }}
+            - name: Build (with target)
+              if: matrix.target != ''
+              run: cargo build --release --locked --target ${{ matrix.target }}
+            - name: Build (native)
+              if: matrix.target == ''
               run: cargo build --release --locked
 
             - name: Release binary "bonnie"
               uses: svenstaro/upload-release-action@v2
               with:
                   repo_token: ${{ secrets.GITHUB_TOKEN }}
-                  file: target/release/${{ matrix.artifact_name }}
+                  file: target/${{ matrix.target_dir }}/${{ matrix.artifact_name }}
                   asset_name: ${{ matrix.asset_name }}
                   tag: ${{ github.ref }}
                   body: "See [CHANGELOG.md](./CHANGELOG.md) for details."
@@ -52,7 +65,7 @@ jobs:
               uses: svenstaro/upload-release-action@v2
               with:
                   repo_token: ${{ secrets.GITHUB_TOKEN }}
-                  file: target/release/${{ matrix.artifact_name_2 }}
+                  file: target/${{ matrix.target_dir }}/${{ matrix.artifact_name_2 }}
                   asset_name: ${{ matrix.asset_name_2 }}
                   tag: ${{ github.ref }}
                   body: "See [CHANGELOG.md](./CHANGELOG.md) for details."
