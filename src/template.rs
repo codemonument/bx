@@ -28,8 +28,7 @@ fn get_template_path() -> Option<PathBuf> {
 			// This will return `None` if the user's home directory isn't found, we make it also do so if the global template isn't found
 			home_dir()
 				.map(|path| path.join(".bonnie").join("template.toml"))
-				.map(|path| if path.exists() { Some(path) } else { None })
-				.flatten()
+				.and_then(|path| if path.exists() { Some(path) } else { None })
 		}
 	}
 }

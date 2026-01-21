@@ -260,7 +260,7 @@ impl BonesCore {
 		output: &mut impl std::io::Write,
 	) -> Result<i32, String> {
 		// Get the executable from the shell (the first element)
-		let executable = self.shell.get(0);
+		let executable = self.shell.first();
 		let executable = match executable {
             // If the shell is not universal to all stages, we return an error
             // We should not have to interpolate anything into the executable
@@ -294,7 +294,7 @@ impl BonesCore {
 			.expect("Failed to write verbose information.");
 		}
 		// Prepare the child process
-		let child = OsCommand::new(&executable).args(args).spawn();
+		let child = OsCommand::new(executable).args(args).spawn();
 
 		// The child must be mutable so we can wait for it to finish later
 		let mut child = match child {

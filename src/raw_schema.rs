@@ -85,15 +85,12 @@ impl Config {
 	// Loads the environment variable files requested in the config
 	// This is generic because it's called in caching as well
 	pub fn load_env_files(env_files: Option<Vec<String>>) -> Result<(), String> {
-		let env_files = match env_files {
-			Some(env_files) => env_files,
-			None => Vec::new(),
-		};
+		let env_files = env_files.unwrap_or_default();
 		// Parse each of the requested environment variable files
 		for env_file in env_files.iter() {
 			// Load the file
 			// This will be loaded for the Bonnie program, which allows us to interpolate them into commands
-			let res = dotenv::from_filename(&env_file);
+			let res = dotenv::from_filename(env_file);
 			if res.is_err() {
 				return Err(format!("Requested environment variable file '{}' could not be loaded. Either the file doesn't exist, Bonnie doesn't have the permissions necessary to access it, or something inside it can't be processed.", &env_file));
 			}
@@ -159,9 +156,9 @@ impl Config {
                         // If `order` is defined at the level above, we can't interpolate environment variables from here (has to be done at the level `order` was specified)
                         args: match is_order_defined {
                             // Unordered subcommands can't take arguments in any case of upper-level `order` definition
-                            _ if matches!(subcommands, Some(_)) && matches!(order, None) && matches!(args, Some(_)) => return Err(format!("Error in parsing Bonnie configuration file: if `subcommands` is specified without `order`, `args` cannot be specified. This error occurred in in the '{}' script/subscript.", script_name)),
+                            _ if subcommands.is_some() && order.is_none() && args.is_some() => return Err(format!("Error in parsing Bonnie configuration file: if `subcommands` is specified without `order`, `args` cannot be specified. This error occurred in in the '{}' script/subscript.", script_name)),
                             // If it was and `args` is specified, return an error
-                            true if matches!(args, Some(_)) => return Err(format!("Error in parsing Bonnie configuration file: if `order` is specified, subscripts cannot specify `args`, as no environment variables can be provided to them. Environment variables to be interpolated in ordered subcommands must be set at the top-level. This error occurred in the '{}' script/subscript.", script_name)),
+                            true if args.is_some() => return Err(format!("Error in parsing Bonnie configuration file: if `order` is specified, subscripts cannot specify `args`, as no environment variables can be provided to them. Environment variables to be interpolated in ordered subcommands must be set at the top-level. This error occurred in the '{}' script/subscript.", script_name)),
                             // If it was but args` isn't specified, it doesn't matter and we just give an empty vector instead
                             true => Vec::new(),
                             // If it wasn't, no validation needed
@@ -174,13 +171,13 @@ impl Config {
                         subcommands: match subcommands {
                             // We can't use `.map()` for this because we need support for `?`
                             Some(subcommands) => Some(
-                                parse_scripts(subcommands, matches!(order, Some(_)))?
+                                parse_scripts(subcommands, order.is_some())?
                             ),
                             None => None
                         },
                         // If `order` is defined at the level above and `subcommands` is defined here, `order` must be defined here too
                         order: match is_order_defined {
-                            true if matches!(subcommands, Some(_)) => match order {
+                            true if subcommands.is_some() => match order {
                                 // If it was required and was given, no problem
                                 Some(order) => Some(parse_directive_str(order)?),
                                 // If it was required but not given, return an error
@@ -195,9 +192,9 @@ impl Config {
                         // If subcommands were specified, this is optional, otherwise we return an error
                         cmd: match cmd {
                             // It was given, but there are also ordered subcommands here, so execution will be ambiguous, return an error
-                            Some(_) if matches!(order, Some(_)) => return Err(format!("Error in parsing Bonnie configuration file: both `cmd` and `order` were specified. This would lead to problems of ambiguous execution, so commands can have either the top-level `cmd` property or ordered subcommands, the two are mutually exclusive. This error occurred in in the '{}' script/subscript.", script_name)),
+                            Some(_) if order.is_some() => return Err(format!("Error in parsing Bonnie configuration file: both `cmd` and `order` were specified. This would lead to problems of ambiguous execution, so commands can have either the top-level `cmd` property or ordered subcommands, the two are mutually exclusive. This error occurred in in the '{}' script/subscript.", script_name)),
                             // It's optional
-                            _ if matches!(subcommands, Some(_)) => cmd.as_ref().map(|cmd| cmd.parse()),
+                            _ if subcommands.is_some() => cmd.as_ref().map(|cmd| cmd.parse()),
                             // It's mandatory and given
                             Some(cmd) => Some(cmd.parse()),
                             // It's mandatory and not given

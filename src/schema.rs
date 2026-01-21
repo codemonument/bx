@@ -30,7 +30,7 @@ impl Config {
 			first_time: bool,
 		) -> Result<(&'a Command, String, Vec<String>), String> {
 			// Get the name of the command
-			let command_name = args.get(0);
+			let command_name = args.first();
 			let command_name = match command_name {
                 Some(command_name) => command_name,
                 None => {
@@ -54,7 +54,7 @@ impl Config {
 			// We found it, check if it has any unordered subcommands or a root-level command
 			let final_command_and_relevant_args = match &command.subcommands {
 				// It has a root-level command (which can't take arguments) and no more arguments are present, this is the command we want
-				Some(_) if matches!(command.cmd, Some(_)) && args.len() == 1 => {
+				Some(_) if command.cmd.is_some() && args.len() == 1 => {
 					(command, command_name.to_string(), {
 						// We get the arguments to the program, excluding the name of this command, these are the arguments to be inteprolated
 						let mut args_for_interpolation = args.to_vec();
@@ -63,7 +63,7 @@ impl Config {
 					})
 				}
 				// It does, recurse on them
-				Some(subcommands) if matches!(command.order, None) => {
+				Some(subcommands) if command.order.is_none() => {
 					// We remove the first argument, which is the name of this, the parent command
 					let mut args_without_this = args.to_vec();
 					args_without_this.remove(0);
@@ -211,8 +211,8 @@ impl Command {
 			None => &self.args,
 		};
 		let at_top_level = top_level_args.is_none();
-		if matches!(self.subcommands, None)
-			|| (matches!(self.subcommands, Some(_)) && matches!(self.cmd, Some(_)))
+		if self.subcommands.is_none()
+			|| (self.subcommands.is_some() && self.cmd.is_some())
 		{
 			// We have either a direct command or a parent command that has irrelevant subcommands, either way we're interpolating into `cmd`
 			// Get the vector of command wrappers
@@ -240,7 +240,7 @@ impl Command {
 					shell: shell.parts.to_vec(),
 				}),
 			)
-		} else if matches!(self.subcommands, Some(_)) && matches!(self.order, Some(_)) {
+		} else if self.subcommands.is_some() && self.order.is_some() {
 			// First, we resolve all the subcommands to vectors of strings to actually run
 			let mut cmds: HashMap<String, Bone> = HashMap::new();
 			// Now we run checks on whether the correct number of arguments have been provided if we're at the very top level
