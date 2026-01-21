@@ -1,11 +1,11 @@
 ---
 # bx-xdgh
 title: Update .editorconfig to use tabs and reformat codebase
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-01-21T10:57:17Z
-updated_at: 2026-01-21T12:17:38Z
+updated_at: 2026-01-21T12:25:02Z
 ---
 
 ## Summary
