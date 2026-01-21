@@ -87,16 +87,15 @@ fn core() -> Result<i32, String> {
 	}
 	// Check if there's a cache we should read from
 	// If there is but we're explicitly recaching, we should of course read directly from the source file
-	let cfg;
-	if cache_exists()? && !should_cache {
-		cfg = load_from_cache(stdout, None)?;
+	let cfg = if cache_exists()? && !should_cache {
+		load_from_cache(stdout, None)?
 	} else {
 		// Get the config as a string
 		let cfg_str = get_cfg()?;
 		// Create a raw config object and parse it fully
 		// We use `stdout` for printing warnings
-		cfg = Config::new(&cfg_str)?.to_final(BONNIE_VERSION, stdout)?;
-	}
+		Config::new(&cfg_str)?.to_final(BONNIE_VERSION, stdout)?
+	};
 
 	// Check if we're caching
 	if should_cache {

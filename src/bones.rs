@@ -333,10 +333,9 @@ impl BonesCore {
 // This function basically interprets a miniature programming language
 // Right now, this is quite slow due to its extensive use of RegEx, any ideas to speed it up would be greatly appreciated!
 pub fn parse_directive_str(directive_str: &str) -> Result<BonesDirective, String> {
-	let directive_json: String;
 	// Check if we have the alternative super-simple form (just one command, rare but easy to parse)
-	if !directive_str.contains('{') {
-		directive_json = "[\"".to_string() + directive_str + "\", {}]"
+	let directive_json = if !directive_str.contains('{') {
+		"[\"".to_string() + directive_str + "\", {}]"
 	} else {
 		// We transform the directive string into compliant JSON with a series of substitutions
 		// Execute non-regex substitutions
@@ -352,8 +351,8 @@ pub fn parse_directive_str(directive_str: &str) -> Result<BonesDirective, String
 		// Execute each of those substitutions
 		let stage2 = re1.replace_all(&stage1, sub1);
 		let stage3 = re2.replace_all(&stage2, sub2);
-		directive_json = re3.replace_all(&stage3, sub3).to_string();
-	}
+		re3.replace_all(&stage3, sub3).to_string()
+	};
 	// Now we can deserialize that directly using Serde
 	let raw_directive = serde_json::from_str::<RawBonesDirective>(&directive_json);
 	let raw_directive = match raw_directive {
