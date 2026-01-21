@@ -1,6 +1,6 @@
 [package]
     name = "bx-cli"
-    version = "0.4.0"
+    version = "0.4.1"
     description = "Simple, cross-platform, and fast command aliases with superpowers."
     authors = [
         "arctic_hen7 <arctic_hen7@pm.me>",
