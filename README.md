@@ -1,5 +1,6 @@
 <h1 align="center">bx</h1>
 
+[![Crates.io](https://img.shields.io/crates/v/bx-cli.svg)](https://crates.io/crates/bx-cli)
 [![Test](https://github.com/codemonument/bx/actions/workflows/ci.yml/badge.svg)](https://github.com/codemonument/bx/actions/workflows/ci.yml)
 [![Build and Release](https://github.com/codemonument/bx/actions/workflows/cd.yml/badge.svg)](https://github.com/codemonument/bx/actions/workflows/cd.yml)
 
@@ -50,7 +51,7 @@ bx test
 
 ### From Cargo
 ```bash
-cargo install codemonument_bx
+cargo install bx-cli
 ```
 
 ### From Releases
