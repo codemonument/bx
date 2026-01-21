@@ -10,7 +10,7 @@ mod template;
 mod version;
 
 pub use crate::cache::{cache, cache_exists, load_from_cache};
-pub use crate::get_cfg::get_cfg;
+pub use crate::get_cfg::{get_cfg, get_cfg_path};
 pub use crate::help::help;
 pub use crate::init::init;
 pub use crate::raw_schema::Config;

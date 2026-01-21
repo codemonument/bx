@@ -22,6 +22,9 @@
     regex      = "1.5"
     home       = "0.5"
 
+[dev-dependencies]
+    tempfile   = "3"
+
 [lib]
     name = "lib"
 

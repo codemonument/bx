@@ -1,4 +1,6 @@
-use lib::{cache, cache_exists, get_cfg, help, init, load_from_cache, Config, BONNIE_VERSION};
+use lib::{
+    cache, cache_exists, get_cfg, get_cfg_path, help, init, load_from_cache, Config, BONNIE_VERSION,
+};
 use std::env;
 use std::io::Write;
 
@@ -35,7 +37,7 @@ fn core() -> Result<i32, String> {
     // TODO add a checker for the executable that offers to install Bonnie if it isn't already?
     let _executable_name = prog_args.remove(0);
     // Get the file we'll be using
-    let cfg_path = env::var("BONNIE_CONF").unwrap_or_else(|_| "./bonnie.toml".to_string());
+    let cfg_path = get_cfg_path()?;
     // Check for special arguments
     let mut should_cache = false;
     let mut verbose = false;

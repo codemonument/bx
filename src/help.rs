@@ -11,12 +11,12 @@ This just summarizes the functionality of this command, not the syntax of Bonnie
 
 -h, --help                                      prints this help page
 -v, --version                                   prints the current version of Bonnie
--i, --init [-t, --template <template-file>]     creates a new `bonnie.toml` configuration (or whatever's set in `BONNIE_CONF`), using the specified template file if provided
+-i, --init [-t, --template <template-file>]     creates a new config file (or whatever's set in `BX_CONF`/`BONNIE_CONF`), using the specified template file if provided
 -c, --cache                                     caches the Bonnie configuration file to `.bonnie.cache.json` for performance (this cache must be MANUALLY updated by re-running this command!)
 
 help [command-name]                             prints the help page for the current Bonnie configuration or for the given command
 
-The expected location of a Bonnie configuration file can be changed from the default `./bonnie.toml` by setting the `BONNIE_CONF` environment variable.
+The config file location can be set via `BX_CONF` or `BONNIE_CONF` environment variables. Without these, `./bx.toml` is checked first, then `./bonnie.toml`.
 The expected location of a Bonnie cache file can be changed from the default `./.bonnie.cache.json` by setting the `BONNIE_CACHE` environment variable.
 The expected location of your default template can be changed from the default `~/.bonnie/template.toml` by setting the `BONNIE_TEMPLATE` environment variable.
 
