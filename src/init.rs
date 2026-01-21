@@ -11,18 +11,19 @@ pub fn init(template: Option<String>, cfg_path: &str) -> Result<(), String> {
 	} else {
 		// Check if a template has been given
 		let output;
-		if template.is_some() && fs::metadata(template.as_ref().unwrap()).is_ok() {
-			let template_path = template.unwrap();
-			// We have a valid template file
-			let contents = fs::read_to_string(&template_path);
-			let contents = match contents {
-                Ok(contents) => contents,
-                Err(_) => return Err(format!("An error occurred while attempting to read the given template file '{}'. Please make sure the file exists and you have the permissions necessary to read from it.", &template_path))
-            };
-			output = fs::write(cfg_path, contents);
-		} else if template.is_some() && fs::metadata(template.as_ref().unwrap()).is_err() {
-			// We have a template file that doesn't exist
-			return Err(format!("The given template file at '{}' does not exist or can't be read. Please make sure the file exists and you have the permissions necessary to read from it.", template.as_ref().unwrap()));
+		if let Some(template_path) = template {
+			if fs::metadata(&template_path).is_ok() {
+				// We have a valid template file
+				let contents = fs::read_to_string(&template_path);
+				let contents = match contents {
+					Ok(contents) => contents,
+					Err(_) => return Err(format!("An error occurred while attempting to read the given template file '{}'. Please make sure the file exists and you have the permissions necessary to read from it.", &template_path))
+				};
+				output = fs::write(cfg_path, contents);
+			} else {
+				// We have a template file that doesn't exist
+				return Err(format!("The given template file at '{}' does not exist or can't be read. Please make sure the file exists and you have the permissions necessary to read from it.", &template_path));
+			}
 		} else {
 			// Try to get the default template file from `~/.bonnie/template.toml`
 			// If it's not available, we'll use a pre-programmed default

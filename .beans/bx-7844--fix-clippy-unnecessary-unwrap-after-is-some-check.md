@@ -1,11 +1,11 @@
 ---
 # bx-7844
 title: 'Fix clippy: unnecessary unwrap after is_some check'
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-21T15:54:10Z
-updated_at: 2026-01-21T15:54:10Z
+updated_at: 2026-01-21T20:15:51Z
 ---
 
 ## Summary
@@ -29,9 +29,9 @@ if let Some(template_path) = template {
 ```
 
 ## Checklist
-- [ ] Refactor `src/init.rs` to use `if let` or `match` pattern
-- [ ] Run `cargo test` to ensure nothing broke
-- [ ] Run `cargo clippy` to verify warning is gone
+- [x] Refactor `src/init.rs` to use `if let` or `match` pattern
+- [x] Run `cargo test` to ensure nothing broke
+- [x] Run `cargo clippy` to verify warning is gone
 
 ## Notes
 NOT auto-fixable - requires restructuring the conditional logic.
