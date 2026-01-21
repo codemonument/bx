@@ -33,45 +33,45 @@ test {
 
 #[cfg(test)]
 fn get_cfg(version: &str) -> FinalConfig {
-    let cfg_str = "version = \"".to_string() + version + "\"\n" + CFG_STR;
-    Config::new(&cfg_str)
-        .unwrap()
-        .to_final(version, &mut Vec::new())
-        .unwrap()
+	let cfg_str = "version = \"".to_string() + version + "\"\n" + CFG_STR;
+	Config::new(&cfg_str)
+		.unwrap()
+		.to_final(version, &mut Vec::new())
+		.unwrap()
 }
 
 #[test]
 fn cache_works() {
-    let dir = tempdir().unwrap();
-    let tmp_path = dir.path().join("cache.json").to_string_lossy().to_string();
-    let cfg = get_cfg(BONNIE_VERSION);
-    let mut output = Vec::new();
-    let res = cache(&cfg, &mut output, Some(&tmp_path));
-    assert_eq!(res, Ok(()));
-    let cfg_extracted = load_from_cache(&mut output, Some(&tmp_path));
-    assert_eq!(cfg_extracted, Ok(cfg));
+	let dir = tempdir().unwrap();
+	let tmp_path = dir.path().join("cache.json").to_string_lossy().to_string();
+	let cfg = get_cfg(BONNIE_VERSION);
+	let mut output = Vec::new();
+	let res = cache(&cfg, &mut output, Some(&tmp_path));
+	assert_eq!(res, Ok(()));
+	let cfg_extracted = load_from_cache(&mut output, Some(&tmp_path));
+	assert_eq!(cfg_extracted, Ok(cfg));
 }
 
 #[test]
 fn loads_env_files() {
-    let dir = tempdir().unwrap();
-    let tmp_path = dir.path().join("cache.json").to_string_lossy().to_string();
-    let cfg = get_cfg(BONNIE_VERSION);
-    env::remove_var("SHORTGREETING");
-    let mut output = Vec::new();
-    cache(&cfg, &mut output, Some(&tmp_path)).unwrap();
-    load_from_cache(&mut output, Some(&tmp_path)).unwrap();
-    assert_eq!(env::var("SHORTGREETING"), Ok("Hello".to_string()))
+	let dir = tempdir().unwrap();
+	let tmp_path = dir.path().join("cache.json").to_string_lossy().to_string();
+	let cfg = get_cfg(BONNIE_VERSION);
+	env::remove_var("SHORTGREETING");
+	let mut output = Vec::new();
+	cache(&cfg, &mut output, Some(&tmp_path)).unwrap();
+	load_from_cache(&mut output, Some(&tmp_path)).unwrap();
+	assert_eq!(env::var("SHORTGREETING"), Ok("Hello".to_string()))
 }
 
 #[test]
 fn returns_error_on_bad_version() {
-    let dir = tempdir().unwrap();
-    let tmp_path = dir.path().join("cache.json").to_string_lossy().to_string();
-    let mut cfg = get_cfg(BONNIE_VERSION);
-    let mut output = Vec::new();
-    cfg.version = "0.1.0".to_string();
-    cache(&cfg, &mut output, Some(&tmp_path)).unwrap();
-    let cfg_extracted = load_from_cache(&mut output, Some(&tmp_path));
-    assert!(matches!(cfg_extracted, Err(_)));
+	let dir = tempdir().unwrap();
+	let tmp_path = dir.path().join("cache.json").to_string_lossy().to_string();
+	let mut cfg = get_cfg(BONNIE_VERSION);
+	let mut output = Vec::new();
+	cfg.version = "0.1.0".to_string();
+	cache(&cfg, &mut output, Some(&tmp_path)).unwrap();
+	let cfg_extracted = load_from_cache(&mut output, Some(&tmp_path));
+	assert!(matches!(cfg_extracted, Err(_)));
 }

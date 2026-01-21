@@ -12,53 +12,53 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
-    version: String,                // This will be used to confirm compatibility
-    env_files: Option<Vec<String>>, // Files specified here have their environment variables loaded into Bonnie
-    default_shell: Option<DefaultShell>,
-    scripts: Scripts,
+	version: String,                // This will be used to confirm compatibility
+	env_files: Option<Vec<String>>, // Files specified here have their environment variables loaded into Bonnie
+	default_shell: Option<DefaultShell>,
+	scripts: Scripts,
 }
 impl Config {
-    pub fn new(cfg_string: &str) -> Result<Self, String> {
-        let cfg: Result<Self, toml::de::Error> = toml::from_str(cfg_string);
-        let cfg = match cfg {
+	pub fn new(cfg_string: &str) -> Result<Self, String> {
+		let cfg: Result<Self, toml::de::Error> = toml::from_str(cfg_string);
+		let cfg = match cfg {
             Ok(cfg) => cfg,
             // We explicitly handle the missing version for better backward-compatibility before 0.2.0 and because it's an easy mistake to make
             Err(err) if err.to_string().starts_with("missing field `version`") => return Err("Your Bonnie configuration file appears to be missing a 'version' key. From Bonnie 0.2.0 onwards, this key is mandatory for compatibility reasons. Please add `version = \"".to_string() + BONNIE_VERSION + "\"` to the top of your Bonnie configuration file."),
             Err(err) => return Err(format!("Invalid Bonnie configuration file. Error: '{}'", err))
         };
 
-        Ok(cfg)
-    }
-    // Runs all the necessary methods to fully parse the config, consuming `self`
-    // Takes the current version of Bonnie (extracted for testing purposes)
-    // This accepts an output for warnings (extracted for testing)
-    pub fn to_final(
-        &self,
-        bonnie_version_str: &str,
-        output: &mut impl std::io::Write,
-    ) -> Result<schema::Config, String> {
-        // These two are run for their side-effects (both also used in loading from a cache)
-        Self::parse_version_against_current(&self.version, bonnie_version_str, output)?;
-        Self::load_env_files(self.env_files.clone())?;
-        // And then we get the final config
-        let cfg = self.parse()?;
+		Ok(cfg)
+	}
+	// Runs all the necessary methods to fully parse the config, consuming `self`
+	// Takes the current version of Bonnie (extracted for testing purposes)
+	// This accepts an output for warnings (extracted for testing)
+	pub fn to_final(
+		&self,
+		bonnie_version_str: &str,
+		output: &mut impl std::io::Write,
+	) -> Result<schema::Config, String> {
+		// These two are run for their side-effects (both also used in loading from a cache)
+		Self::parse_version_against_current(&self.version, bonnie_version_str, output)?;
+		Self::load_env_files(self.env_files.clone())?;
+		// And then we get the final config
+		let cfg = self.parse()?;
 
-        Ok(cfg)
-    }
-    // Parses the version of the config to check for compatibility issues, consuming `self`
-    // We extract the version of Bonnie itself for testing purposes
-    // This si generic because it's used in caching logic as well
-    pub fn parse_version_against_current(
-        cfg_version_str: &str,
-        bonnie_version_str: &str,
-        output: &mut impl std::io::Write,
-    ) -> Result<(), String> {
-        // Split the program and config file versions into their components
-        let bonnie_version = get_version_parts(bonnie_version_str)?;
-        let cfg_version = get_version_parts(cfg_version_str)?;
-        // Compare the two and warn/error appropriately
-        let compat = bonnie_version.is_compatible_with(&cfg_version);
-        match compat {
+		Ok(cfg)
+	}
+	// Parses the version of the config to check for compatibility issues, consuming `self`
+	// We extract the version of Bonnie itself for testing purposes
+	// This si generic because it's used in caching logic as well
+	pub fn parse_version_against_current(
+		cfg_version_str: &str,
+		bonnie_version_str: &str,
+		output: &mut impl std::io::Write,
+	) -> Result<(), String> {
+		// Split the program and config file versions into their components
+		let bonnie_version = get_version_parts(bonnie_version_str)?;
+		let cfg_version = get_version_parts(cfg_version_str)?;
+		// Compare the two and warn/error appropriately
+		let compat = bonnie_version.is_compatible_with(&cfg_version);
+		match compat {
             VersionCompatibility::DifferentBetaVersion(version_difference) => return Err("The provided configuration file is incompatible with this version of Bonnie. You are running Bonnie v".to_string() + bonnie_version_str + ", but the configuration file expects Bonnie v" + cfg_version_str + ". " + match version_difference {
                 VersionDifference::TooNew => "This issue can be fixed by updating Bonnie to the appropriate version, which can be done at https://github.com/arctic-hen7/bonnie/releases.",
                 VersionDifference::TooOld => "This issue can be fixed by updating the configuration file, which may require changing some of its syntax (see https://github.com/arctic-hen7/bonnie for how to do so). Alternatively, you can download an older version of Bonnie from https://github.com/arctic-hen7/bonnie/releases (not recommended)."
@@ -79,67 +79,67 @@ impl Config {
             _ => ()
         };
 
-        // If we haven't returned an error yet, the version is valid (and warnings have been emitted as necessary)
-        Ok(())
-    }
-    // Loads the environment variable files requested in the config
-    // This is generic because it's called in caching as well
-    pub fn load_env_files(env_files: Option<Vec<String>>) -> Result<(), String> {
-        let env_files = match env_files {
-            Some(env_files) => env_files,
-            None => Vec::new(),
-        };
-        // Parse each of the requested environment variable files
-        for env_file in env_files.iter() {
-            // Load the file
-            // This will be loaded for the Bonnie program, which allows us to interpolate them into commands
-            let res = dotenv::from_filename(&env_file);
-            if res.is_err() {
-                return Err(format!("Requested environment variable file '{}' could not be loaded. Either the file doesn't exist, Bonnie doesn't have the permissions necessary to access it, or something inside it can't be processed.", &env_file));
-            }
-        }
+		// If we haven't returned an error yet, the version is valid (and warnings have been emitted as necessary)
+		Ok(())
+	}
+	// Loads the environment variable files requested in the config
+	// This is generic because it's called in caching as well
+	pub fn load_env_files(env_files: Option<Vec<String>>) -> Result<(), String> {
+		let env_files = match env_files {
+			Some(env_files) => env_files,
+			None => Vec::new(),
+		};
+		// Parse each of the requested environment variable files
+		for env_file in env_files.iter() {
+			// Load the file
+			// This will be loaded for the Bonnie program, which allows us to interpolate them into commands
+			let res = dotenv::from_filename(&env_file);
+			if res.is_err() {
+				return Err(format!("Requested environment variable file '{}' could not be loaded. Either the file doesn't exist, Bonnie doesn't have the permissions necessary to access it, or something inside it can't be processed.", &env_file));
+			}
+		}
 
-        Ok(())
-    }
-    // Parses the rest of the config into the final form, consuming `self`
-    // A very large portion of Bonnie's logic lives here or is called here (spec transformation)
-    fn parse(&self) -> Result<schema::Config, String> {
-        // Parse the default shell
-        let default_shell = match &self.default_shell {
-            // If we're just given a shell string, use it as the generic shell
-            Some(DefaultShell::Simple(generic)) => schema::DefaultShell {
-                generic: generic.parse(),
-                targets: HashMap::new(),
-            },
-            // If we have all the information we need, just transform it
-            Some(DefaultShell::Complex { generic, targets }) => schema::DefaultShell {
-                generic: generic.parse(),
-                targets: match targets {
-                    Some(raw_targets) => {
-                        // This is just transformation logic
-                        let mut targets = HashMap::new();
-                        for (target_name, shell) in raw_targets.iter() {
-                            targets.insert(target_name.to_string(), shell.parse());
-                        }
-                        targets
-                    }
-                    None => HashMap::new(), // We'll just use the generic if we don't have anything else
-                },
-            },
-            // If no default shell is provided, we'll use the default paradigm (see `default_shells.rs`)
-            None => get_default_shells(),
-        };
-        // Parse the scripts (brace yourself!)
-        // We do this inside a function because it's recursive
-        // Unfortunately we can't define methods on type aliases, so this goes here
-        // This involves validation logic to ensure invalid property combinations aren't specified, so we need to know whether or not `order` is specified if this is parsing subcommands
-        fn parse_scripts(
-            raw_scripts: &Scripts,
-            is_order_defined: bool,
-        ) -> Result<schema::Scripts, String> {
-            let mut scripts: schema::Scripts = HashMap::new();
-            for (script_name, raw_command) in raw_scripts.iter() {
-                let command = match raw_command {
+		Ok(())
+	}
+	// Parses the rest of the config into the final form, consuming `self`
+	// A very large portion of Bonnie's logic lives here or is called here (spec transformation)
+	fn parse(&self) -> Result<schema::Config, String> {
+		// Parse the default shell
+		let default_shell = match &self.default_shell {
+			// If we're just given a shell string, use it as the generic shell
+			Some(DefaultShell::Simple(generic)) => schema::DefaultShell {
+				generic: generic.parse(),
+				targets: HashMap::new(),
+			},
+			// If we have all the information we need, just transform it
+			Some(DefaultShell::Complex { generic, targets }) => schema::DefaultShell {
+				generic: generic.parse(),
+				targets: match targets {
+					Some(raw_targets) => {
+						// This is just transformation logic
+						let mut targets = HashMap::new();
+						for (target_name, shell) in raw_targets.iter() {
+							targets.insert(target_name.to_string(), shell.parse());
+						}
+						targets
+					}
+					None => HashMap::new(), // We'll just use the generic if we don't have anything else
+				},
+			},
+			// If no default shell is provided, we'll use the default paradigm (see `default_shells.rs`)
+			None => get_default_shells(),
+		};
+		// Parse the scripts (brace yourself!)
+		// We do this inside a function because it's recursive
+		// Unfortunately we can't define methods on type aliases, so this goes here
+		// This involves validation logic to ensure invalid property combinations aren't specified, so we need to know whether or not `order` is specified if this is parsing subcommands
+		fn parse_scripts(
+			raw_scripts: &Scripts,
+			is_order_defined: bool,
+		) -> Result<schema::Scripts, String> {
+			let mut scripts: schema::Scripts = HashMap::new();
+			for (script_name, raw_command) in raw_scripts.iter() {
+				let command = match raw_command {
                     Command::Simple(raw_command_wrapper) => schema::Command {
                         args: Vec::new(),
                         env_vars: Vec::new(),
@@ -206,34 +206,34 @@ impl Config {
                         description: desc.clone()
                     },
                 };
-                scripts.insert(script_name.to_string(), command);
-            }
+				scripts.insert(script_name.to_string(), command);
+			}
 
-            Ok(scripts)
-        }
+			Ok(scripts)
+		}
 
-        let scripts = parse_scripts(&self.scripts, false)?;
+		let scripts = parse_scripts(&self.scripts, false)?;
 
-        Ok(schema::Config {
-            default_shell,
-            scripts,
-            // Copy these last two in case the final config is cached and needs to be revalidated on load
-            env_files: match &self.env_files {
-                Some(env_files) => env_files.to_vec(),
-                None => Vec::new(),
-            },
-            version: self.version.clone(),
-        })
-    }
+		Ok(schema::Config {
+			default_shell,
+			scripts,
+			// Copy these last two in case the final config is cached and needs to be revalidated on load
+			env_files: match &self.env_files {
+				Some(env_files) => env_files.to_vec(),
+				None => Vec::new(),
+			},
+			version: self.version.clone(),
+		})
+	}
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 enum DefaultShell {
-    Simple(Shell), // Just a generic shell
-    Complex {
-        generic: Shell, // A generic shell must be given
-        targets: Option<HashMap<String, Shell>>,
-    },
+	Simple(Shell), // Just a generic shell
+	Complex {
+		generic: Shell, // A generic shell must be given
+		targets: Option<HashMap<String, Shell>>,
+	},
 }
 // A vector of the executable followed by raw arguments thereto, the location for command interpolation is specified with '{COMMAND}'
 // A custom delimiter can also be specified (the default is ` && `), this should include spaces if necessary
@@ -241,27 +241,27 @@ enum DefaultShell {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum Shell {
-    Simple(Vec<String>),
-    WithDelimiter {
-        parts: Vec<String>,
-        delimiter: String,
-    },
+	Simple(Vec<String>),
+	WithDelimiter {
+		parts: Vec<String>,
+		delimiter: String,
+	},
 }
 impl Shell {
-    fn parse(&self) -> schema::Shell {
-        match self {
-            Shell::Simple(parts) => schema::Shell {
-                parts: parts.to_vec(),
-                // The default delimiter is ` && ` in all cases (supported everywhere except Windows PowerShell)
-                delimiter: " && ".to_string(),
-            },
-            Shell::WithDelimiter { parts, delimiter } => schema::Shell {
-                parts: parts.to_vec(),
-                // The default delimiter is `&&` in all cases (supported everywhere except Windows PowerShell)
-                delimiter: delimiter.to_string(),
-            },
-        }
-    }
+	fn parse(&self) -> schema::Shell {
+		match self {
+			Shell::Simple(parts) => schema::Shell {
+				parts: parts.to_vec(),
+				// The default delimiter is ` && ` in all cases (supported everywhere except Windows PowerShell)
+				delimiter: " && ".to_string(),
+			},
+			Shell::WithDelimiter { parts, delimiter } => schema::Shell {
+				parts: parts.to_vec(),
+				// The default delimiter is `&&` in all cases (supported everywhere except Windows PowerShell)
+				delimiter: delimiter.to_string(),
+			},
+		}
+	}
 }
 type TargetString = String; // A target like `linux` or `x86_64-unknown-linux-musl` (see `rustup` targets)
 type Scripts = HashMap<String, Command>;
@@ -269,111 +269,111 @@ type Scripts = HashMap<String, Command>;
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 enum Command {
-    Simple(CommandWrapper), // Might be just a string command to run on the default generic shell
-    Complex {
-        args: Option<Vec<String>>,
-        env_vars: Option<Vec<String>>,
-        subcommands: Option<Scripts>, // Subcommands are fully-fledged commands (mostly)
-        order: Option<OrderString>, // If this is specified, subcomands must not specify the `args` property, it may be specified at the top-level of this script as a sibling of `order`
-        cmd: Option<CommandWrapper>, // This is optional if subcommands are specified
-        desc: Option<String>, // This will be rendered in the config's help page ('description' is overly verbose)
-    },
+	Simple(CommandWrapper), // Might be just a string command to run on the default generic shell
+	Complex {
+		args: Option<Vec<String>>,
+		env_vars: Option<Vec<String>>,
+		subcommands: Option<Scripts>, // Subcommands are fully-fledged commands (mostly)
+		order: Option<OrderString>, // If this is specified, subcomands must not specify the `args` property, it may be specified at the top-level of this script as a sibling of `order`
+		cmd: Option<CommandWrapper>, // This is optional if subcommands are specified
+		desc: Option<String>, // This will be rendered in the config's help page ('description' is overly verbose)
+	},
 }
 type OrderString = String; // A string of as yet undefined syntax that defines the progression between subcommands
-                           // This wraps the complexities of having different shell logic for each command in a multi-stage context
-                           // subcommands are specified above this level (see `Command::Complex`)
+						   // This wraps the complexities of having different shell logic for each command in a multi-stage context
+						   // subcommands are specified above this level (see `Command::Complex`)
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 enum CommandWrapper {
-    Universal(CommandCore), // Just a given command
-    Specific {
-        generic: CommandCore,
-        targets: Option<HashMap<TargetString, CommandCore>>,
-    },
+	Universal(CommandCore), // Just a given command
+	Specific {
+		generic: CommandCore,
+		targets: Option<HashMap<TargetString, CommandCore>>,
+	},
 }
 impl CommandWrapper {
-    // Parses `self` into its final form (`schema::CommandWrapper`)
-    fn parse(&self) -> schema::CommandWrapper {
-        match self {
-            // If it's universal to all targets, just provide a generic
-            CommandWrapper::Universal(raw_command_core) => schema::CommandWrapper {
-                generic: raw_command_core.parse(),
-                targets: HashMap::new(),
-            },
-            // If no targets were given in specific form, the expansion is basically the same as if it were universal
-            CommandWrapper::Specific {
-                generic,
-                targets: None,
-            } => schema::CommandWrapper {
-                generic: generic.parse(),
-                targets: HashMap::new(),
-            },
-            CommandWrapper::Specific {
-                generic,
-                targets: Some(targets),
-            } => {
-                let parsed_generic = generic.parse();
-                let mut parsed_targets: HashMap<schema::TargetString, schema::CommandCore> =
-                    HashMap::new();
-                for (target_name, raw_command_core) in targets.iter() {
-                    parsed_targets.insert(target_name.to_string(), raw_command_core.parse());
-                }
-                schema::CommandWrapper {
-                    generic: parsed_generic,
-                    targets: parsed_targets,
-                }
-            }
-        }
-    }
+	// Parses `self` into its final form (`schema::CommandWrapper`)
+	fn parse(&self) -> schema::CommandWrapper {
+		match self {
+			// If it's universal to all targets, just provide a generic
+			CommandWrapper::Universal(raw_command_core) => schema::CommandWrapper {
+				generic: raw_command_core.parse(),
+				targets: HashMap::new(),
+			},
+			// If no targets were given in specific form, the expansion is basically the same as if it were universal
+			CommandWrapper::Specific {
+				generic,
+				targets: None,
+			} => schema::CommandWrapper {
+				generic: generic.parse(),
+				targets: HashMap::new(),
+			},
+			CommandWrapper::Specific {
+				generic,
+				targets: Some(targets),
+			} => {
+				let parsed_generic = generic.parse();
+				let mut parsed_targets: HashMap<schema::TargetString, schema::CommandCore> =
+					HashMap::new();
+				for (target_name, raw_command_core) in targets.iter() {
+					parsed_targets.insert(target_name.to_string(), raw_command_core.parse());
+				}
+				schema::CommandWrapper {
+					generic: parsed_generic,
+					targets: parsed_targets,
+				}
+			}
+		}
+	}
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 enum CommandCore {
-    Simple(CommandBox), // No shell configuration
-    WithShell {
-        exec: CommandBox, // We can't call this `cmd` because otherwise we'd have a collision with the higher-level `cmd`, which leads to misinterpretation
-        shell: Option<Shell>,
-    },
+	Simple(CommandBox), // No shell configuration
+	WithShell {
+		exec: CommandBox, // We can't call this `cmd` because otherwise we'd have a collision with the higher-level `cmd`, which leads to misinterpretation
+		shell: Option<Shell>,
+	},
 }
 impl CommandCore {
-    // Parses `self` into its final form (`schema::CommandCore`)
-    fn parse(&self) -> schema::CommandCore {
-        match self {
-            CommandCore::Simple(exec) => schema::CommandCore {
-                exec: exec.parse(),
-                shell: None,
-            },
-            CommandCore::WithShell {
-                exec,
-                shell: Some(shell),
-            } => schema::CommandCore {
-                exec: exec.parse(),
-                shell: Some(shell.parse()),
-            },
-            // If no shell was given in the complex form, the expansion is the same as the simple form
-            CommandCore::WithShell { exec, shell: None } => schema::CommandCore {
-                exec: exec.parse(),
-                shell: None,
-            },
-        }
-    }
+	// Parses `self` into its final form (`schema::CommandCore`)
+	fn parse(&self) -> schema::CommandCore {
+		match self {
+			CommandCore::Simple(exec) => schema::CommandCore {
+				exec: exec.parse(),
+				shell: None,
+			},
+			CommandCore::WithShell {
+				exec,
+				shell: Some(shell),
+			} => schema::CommandCore {
+				exec: exec.parse(),
+				shell: Some(shell.parse()),
+			},
+			// If no shell was given in the complex form, the expansion is the same as the simple form
+			CommandCore::WithShell { exec, shell: None } => schema::CommandCore {
+				exec: exec.parse(),
+				shell: None,
+			},
+		}
+	}
 }
 // This represents the possibility of a vector or string at the lowest level
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 enum CommandBox {
-    Simple(String),
-    MultiStage(Vec<String>),
+	Simple(String),
+	MultiStage(Vec<String>),
 }
 impl CommandBox {
-    // Parses `self` into its final form (`Vec<schema::CommandWrapper>`)
-    fn parse(&self) -> Vec<String> {
-        match self {
-            // In fully parsed form, all command wrappers are inside vectors for simplicity
-            CommandBox::Simple(cmd_str) => vec![cmd_str.to_string()],
-            CommandBox::MultiStage(cmd_strs) => {
-                cmd_strs.iter().map(|cmd_str| cmd_str.to_string()).collect()
-            }
-        }
-    }
+	// Parses `self` into its final form (`Vec<schema::CommandWrapper>`)
+	fn parse(&self) -> Vec<String> {
+		match self {
+			// In fully parsed form, all command wrappers are inside vectors for simplicity
+			CommandBox::Simple(cmd_str) => vec![cmd_str.to_string()],
+			CommandBox::MultiStage(cmd_strs) => {
+				cmd_strs.iter().map(|cmd_str| cmd_str.to_string()).collect()
+			}
+		}
+	}
 }
