@@ -1,8 +1,10 @@
 use lib::{
-    cache, cache_exists, get_cfg, get_cfg_path, help, init, load_from_cache, Config, BONNIE_VERSION,
+    cache, cache_exists, get_cfg, help, init, load_from_cache, resolve_cfg_path, Config,
+    BONNIE_VERSION, DEFAULT_BX_CFG_PATH,
 };
 use std::env;
 use std::io::Write;
+use std::path::Path;
 
 // All this does is run the program and terminate with the acquired exit code
 fn main() {
@@ -36,8 +38,11 @@ fn core() -> Result<i32, String> {
     // This will panic if the first argument is not found (which is probably someone trying to fuzz us)
     // TODO add a checker for the executable that offers to install Bonnie if it isn't already?
     let _executable_name = prog_args.remove(0);
-    // Get the file we'll be using
-    let cfg_path = get_cfg_path()?;
+    let cfg_path = resolve_cfg_path(
+        env::var("BX_CONF").ok().as_deref(),
+        env::var("BONNIE_CONF").ok().as_deref(),
+        Path::new(DEFAULT_BX_CFG_PATH).exists(),
+    );
     // Check for special arguments
     let mut should_cache = false;
     let mut verbose = false;
