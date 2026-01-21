@@ -1,11 +1,11 @@
 ---
 # bx-xz7w
 title: 'Fix clippy: needless borrows for generic args'
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-21T12:26:41Z
-updated_at: 2026-01-21T12:26:41Z
+updated_at: 2026-01-21T13:23:52Z
 ---
 
 ## Summary

@@ -47,7 +47,7 @@ fn core() -> Result<i32, String> {
 	let mut should_cache = false;
 	let mut verbose = false;
 	let mut document = false;
-	if matches!(prog_args.get(0), Some(_)) {
+	if prog_args.first().is_some() {
 		if prog_args[0] == "-v" || prog_args[0] == "--version" {
 			writeln!(stdout, "You are currently running Bonnie v{}! You can see the latest release at https://github.com/arctic-hen7/bonnie/releases.", BONNIE_VERSION).expect("Failed to write version.");
 			return Ok(0);

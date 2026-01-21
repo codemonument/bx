@@ -1,11 +1,11 @@
 ---
 # bx-vomo
 title: 'Fix clippy: needless late initialization'
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-21T12:26:44Z
-updated_at: 2026-01-21T12:26:44Z
+updated_at: 2026-01-21T13:23:52Z
 ---
 
 ## Summary

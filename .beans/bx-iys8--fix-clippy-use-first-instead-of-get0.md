@@ -1,11 +1,11 @@
 ---
 # bx-iys8
 title: 'Fix clippy: use .first() instead of .get(0)'
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-21T12:26:33Z
-updated_at: 2026-01-21T12:26:33Z
+updated_at: 2026-01-21T13:23:52Z
 ---
 
 ## Summary

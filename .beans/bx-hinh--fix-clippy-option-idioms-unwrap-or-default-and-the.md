@@ -1,11 +1,11 @@
 ---
 # bx-hinh
 title: 'Fix clippy: Option idioms (unwrap_or_default, and_then)'
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-21T12:26:49Z
-updated_at: 2026-01-21T12:26:49Z
+updated_at: 2026-01-21T13:23:52Z
 ---
 
 ## Summary

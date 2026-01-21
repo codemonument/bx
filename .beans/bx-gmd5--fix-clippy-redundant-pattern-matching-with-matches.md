@@ -1,11 +1,11 @@
 ---
 # bx-gmd5
 title: 'Fix clippy: redundant pattern matching with matches!'
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-21T12:26:39Z
-updated_at: 2026-01-21T12:26:39Z
+updated_at: 2026-01-21T13:23:52Z
 ---
 
 ## Summary
