@@ -211,9 +211,7 @@ impl Command {
 			None => &self.args,
 		};
 		let at_top_level = top_level_args.is_none();
-		if self.subcommands.is_none()
-			|| (self.subcommands.is_some() && self.cmd.is_some())
-		{
+		if self.subcommands.is_none() || (self.subcommands.is_some() && self.cmd.is_some()) {
 			// We have either a direct command or a parent command that has irrelevant subcommands, either way we're interpolating into `cmd`
 			// Get the vector of command wrappers
 			// Assuming the transformation logic works, an error can't occur here
