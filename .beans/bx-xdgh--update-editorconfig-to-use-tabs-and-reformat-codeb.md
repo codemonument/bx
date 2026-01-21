@@ -41,4 +41,4 @@ This ensures `.editorconfig` and `rustfmt` stay in sync.
 - [x] Run `cargo fmt` to reformat codebase (no manual reformatting needed since rustfmt.toml was created first)
 - [x] Verify formatting with `cargo fmt -- --check`
 - [x] Run `cargo check && cargo clippy && cargo test` to ensure nothing broke
-- [ ] Commit the final formatting changes
+- [x] Commit the final formatting changes
