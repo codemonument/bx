@@ -44,7 +44,7 @@ macro_rules! expect_exit_code {
             let output_string = String::from_utf8(output).unwrap();
             let output_lines: Vec<String> = output_string.lines().map(|x| x.to_string()).collect();
             output_lines
-        };
+        }
     }
 }
 
