@@ -1,11 +1,11 @@
 ---
 # bx-vomo
 title: 'Fix clippy: needless late initialization'
-status: completed
+status: todo
 type: task
 priority: low
 created_at: 2026-01-21T12:26:44Z
-updated_at: 2026-01-21T13:23:52Z
+updated_at: 2026-01-21T15:54:38Z
 ---
 
 ## Summary
@@ -22,4 +22,4 @@ Clippy `needless_late_init` warning: variables are declared and then immediately
 - [ ] Run `cargo clippy` to verify warning is gone
 
 ## Notes
-Auto-fixable with `cargo clippy --fix`
+NOT auto-fixable - requires manual code restructuring.
