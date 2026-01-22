@@ -73,5 +73,5 @@ fn returns_error_on_bad_version() {
 	cfg.version = "0.1.0".to_string();
 	cache(&cfg, &mut output, Some(&tmp_path)).unwrap();
 	let cfg_extracted = load_from_cache(&mut output, Some(&tmp_path));
-	assert!(matches!(cfg_extracted, Err(_)));
+	assert!(cfg_extracted.is_err());
 }

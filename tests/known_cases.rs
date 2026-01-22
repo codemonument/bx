@@ -6,12 +6,13 @@
 
 // All these tests are Linux-specific due to their OS-specific testing/shells (sorry!), they are marked as such for conditional compilation
 
+#[cfg(target_os = "linux")]
 use lib::{Config, BONNIE_VERSION};
 
 // A testing utility that represents all Bonnie returns as the promise of an exit code
 // This is modelled off the code in `main.rs` that actually runs Bonnie
 // This takes an output, which will be a simple vector in testing
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 fn run_e2e_test(
 	cfg_str: &str,
 	prog_args: Vec<String>,
@@ -30,7 +31,7 @@ fn run_e2e_test(
 // A testing utility macro that allows us to expect an exit code to be returned
 // This returns the output of the execution (warnings, command info, etc.) as a vector of lines
 // The config string given here does not have to contain any version tag, that will be added
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 macro_rules! expect_exit_code {
     ($exit_code:literal, $raw_cfg_str:expr, $version:expr, [ $($arg:expr),+ ]) => {
         {
@@ -52,7 +53,7 @@ macro_rules! expect_exit_code {
 // This returns the output of the execution (warnings, command info, etc.) as a vector of lines
 // The config string given here does not have to contain any version tag, that will be added
 // TODO after `error_chain` migration, test for specific errors here
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 macro_rules! expect_error {
     ($raw_cfg_str:expr, $version:expr, [ $($arg:expr),+ ]) => {
         {
@@ -72,7 +73,7 @@ macro_rules! expect_error {
 }
 
 // A utility testing macro that asserts the ordered presence of a series of elements in a vector of strings
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 macro_rules! assert_contains_ordered {
     ($vec:expr, [ $($elem:expr),+ ]) => {
         {
@@ -86,7 +87,7 @@ macro_rules! assert_contains_ordered {
 }
 
 // A utility testing macro that asserts the unordered presence of a series of elements in a vector of strings
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 macro_rules! assert_contains {
     ($vec:expr, [ $($elem:expr),+ ]) => {
         {
