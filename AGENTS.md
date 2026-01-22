@@ -2,6 +2,14 @@
 
 This repository is a Rust CLI forked from Bonnie with a `bx` binary. This file is for agentic coding tools.
 
+## Agent Workspace
+
+The `./agents/` directory is your workspace. Use it to store:
+- Information documents and notes for yourself
+- Research findings and context
+- Draft plans and intermediate work
+- Any artifacts you need to persist across sessions
+
 ## Quick Orientation
 - Primary task runner is Bonnie; project scripts live in `bonnie.toml`.
 - Source lives in `src/` with binaries under `src/bin/main.rs`.
