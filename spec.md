@@ -1,18 +1,18 @@
-# Bonnie Specification
+# bx Specification
 
-This file contains the full Bonnie syntax specification as Rust code. This is a very technical document is not necessary at all to use Bonnie! We recomend referring to the rest of the documentation, this is mostly to help people understand how Bonnie works under the hood.
+This file contains the full bx syntax specification as Rust code. This is a very technical document is not necessary at all to use bx! We recommend referring to the rest of the documentation, this is mostly to help people understand how bx works under the hood.
 
 Please note that the terms _alias_ and _command_ are used interchangeably in this document.
 
 ## Configuration File Syntax
 
-This syntax specifies the actual form users will write in Bonnie configuration files, which is designed to be as easy as possible to use, with most features being optional. Due to the large number of `enum`s here, meaning many differing possibilities, this syntax is unified into a final form without this ambiguity, making later processing easier. THat transfer process also allows the abstraction of nearly all Bonnie logic to a something akin to a compile stage for the user's Bonnie configuration file. In future, that will allow caching for complex systems.
+This syntax specifies the actual form users will write in bx configuration files, which is designed to be as easy as possible to use, with most features being optional. Due to the large number of `enum`s here, meaning many differing possibilities, this syntax is unified into a final form without this ambiguity, making later processing easier. That transfer process also allows the abstraction of nearly all bx logic to something akin to a compile stage for the user's bx configuration file. In future, that will allow caching for complex systems.
 
 ```rust
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     version: String,                // This will be used to confirm compatibility
-    env_files: Option<Vec<String>>, // Files specified here have their environment variables loaded into Bonnie
+    env_files: Option<Vec<String>>, // Files specified here have their environment variables loaded into bx
     default_shell: Option<DefaultShell>,
     scripts: Scripts,
 }

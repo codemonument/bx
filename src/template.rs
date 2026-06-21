@@ -1,6 +1,7 @@
 use home::home_dir;
 
-use crate::BONNIE_VERSION;
+use crate::LATEST_CONFIG_VERSION;
+use anyhow::{Context, Result};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -12,38 +13,36 @@ fn get_inbuilt_default_template() -> String {
 
 [scripts]
 start = \"echo \\\"No start script yet!\\\"\"",
-		version = BONNIE_VERSION
+		version = LATEST_CONFIG_VERSION
 	)
 }
 
-// Gets the path of a default template
-// This will return `Ok(None)` if no default template is available
 fn get_template_path() -> Option<PathBuf> {
-	match env::var("BONNIE_TEMPLATE") {
-		// We'll use the given template file path if provided
-		Ok(path) => Some(PathBuf::from(path)),
-		// If that variable isn't set properly or at all, we'll try the user's global template file
-		// This will return `Ok(None)` if the home template couldn't be found
-		Err(_) => {
-			// This will return `None` if the user's home directory isn't found, we make it also do so if the global template isn't found
-			home_dir()
-				.map(|path| path.join(".bonnie").join("template.toml"))
-				.and_then(|path| if path.exists() { Some(path) } else { None })
+	if let Ok(path) = env::var("BX_TEMPLATE") {
+		return Some(PathBuf::from(path));
+	}
+	if let Ok(path) = env::var("BONNIE_TEMPLATE") {
+		return Some(PathBuf::from(path));
+	}
+	if let Some(home) = home_dir() {
+		let bx_template = home.join(".bx").join("template.toml");
+		if bx_template.exists() {
+			return Some(bx_template);
+		}
+		let bonnie_template = home.join(".bonnie").join("template.toml");
+		if bonnie_template.exists() {
+			return Some(bonnie_template);
 		}
 	}
+	None
 }
 
-// Gets the default template, from `BONNIE_TEMPLATE`, the global file, or the pre-programmed default
-pub fn get_default_template() -> Result<String, String> {
+pub fn get_default_template() -> Result<String> {
 	let path = get_template_path();
 	if let Some(path) = path {
-		let template = fs::read_to_string(path);
-		match template {
-            Ok(template) => Ok(template),
-            Err(err) => Err(format!("Failed to get default template file. Please make sure any path in 'BONNIE_TEMPLATE' definitely exists. Error was '{}'.", err))
-        }
+		fs::read_to_string(&path)
+			.with_context(|| format!("Failed to get default template file at '{}'. Please make sure any path in 'BX_TEMPLATE' or 'BONNIE_TEMPLATE' definitely exists.", path.display()))
 	} else {
-		// If no template files exist, use the pre-programmed default instead
 		Ok(get_inbuilt_default_template())
 	}
 }

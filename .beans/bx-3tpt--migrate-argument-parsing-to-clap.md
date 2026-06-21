@@ -1,11 +1,11 @@
 ---
 # bx-3tpt
 title: Migrate argument parsing to clap
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-01-22T09:25:56Z
-updated_at: 2026-01-22T09:25:56Z
+updated_at: 2026-01-22T11:46:30Z
 ---
 
 Replace manual `env::args()` parsing with `clap` derive macros for type-safe argument handling.
@@ -18,16 +18,16 @@ Replace manual `env::args()` parsing with `clap` derive macros for type-safe arg
 - Industry standard (95%+ of Rust CLI tools use clap)
 
 ## Checklist
-- [ ] Add `clap = { version = "4", features = ["derive"] }` to Cargo.toml
-- [ ] Create src/cli/mod.rs module
-- [ ] Create src/cli/args.rs with Cli struct using `#[derive(Parser)]`
-- [ ] Define Commands enum with subcommands (Init, Cache, Help, Run)
-- [ ] Update src/bin/main.rs to use `Cli::parse()`
-- [ ] Remove manual argument parsing code from main.rs
-- [ ] Update src/lib.rs to export cli module
-- [ ] Ensure backward compatibility with existing flags (-v, -i, -c, -d, -h)
-- [ ] Test all commands work as before
-- [ ] Verify auto-generated --help output is correct
+- [x] Add `clap = { version = "4", features = ["derive"] }` to Cargo.toml
+- [x] Create src/cli/mod.rs module
+- [x] Create src/cli/args.rs with Cli struct using `#[derive(Parser)]`
+- [x] Define Commands enum with subcommands (Init, Cache, Help, Run)
+- [x] Update src/bin/main.rs to use `Cli::parse()`
+- [x] Remove manual argument parsing code from main.rs
+- [x] Update src/lib.rs to export cli module
+- [x] Ensure backward compatibility with existing flags (-v, -i, -c, -d, -h)
+- [x] Test all commands work as before
+- [x] Verify auto-generated --help output is correct
 
 ## Cli Structure
 ```rust

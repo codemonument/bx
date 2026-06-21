@@ -1,12 +1,13 @@
-// Bones is Bonnie's command execution runtime, which mainly handles ordered subcommands
+// Bones is bx's command execution runtime, which mainly handles ordered subcommands
 
+use anyhow::{bail, Context, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::process::Command as OsCommand;
 
-// This enables recursion of ordered subcommands (which would be the most complex use-case of Bonnie thus far)
-// This really represents (from Bonnie's perspective) a future for an exit code
+// This enables recursion of ordered subcommands (which would be the most complex use-case of bx thus far)
+// This really represents (from bx's perspective) a future for an exit code
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Bone {
 	Simple(BonesCore),
@@ -15,12 +16,7 @@ pub enum Bone {
 impl Bone {
 	// Executes this command, returning its exit code
 	// This takes an optional buffer to write data about the command being executed in testing
-	pub fn run(
-		&self,
-		name: &str,
-		verbose: bool,
-		output: &mut impl std::io::Write,
-	) -> Result<i32, String> {
+	pub fn run(&self, name: &str, verbose: bool, output: &mut impl std::io::Write) -> Result<i32> {
 		match self {
 			Bone::Simple(core) => {
 				// Execute the command core
@@ -55,28 +51,27 @@ impl BonesCommand {
 	}
 	// Runs a Bones command by evaluating the directive itself and calling commands in sequence recursively
 	// Currently, the logic of the Bones language lives here
-	fn run(&self, verbose: bool, output: &mut impl std::io::Write) -> Result<i32, String> {
+	fn run(&self, verbose: bool, output: &mut impl std::io::Write) -> Result<i32> {
 		// This system is highly recursive, so everything is done in this function for progressively less complex directives
 		fn run_for_directive(
 			directive: &BonesDirective,
 			cmds: &HashMap<String, Bone>,
 			verbose: bool,
 			output: &mut impl std::io::Write,
-		) -> Result<i32, String> {
+		) -> Result<i32> {
 			// Get the token, which names the command we'll be running
 			let command_name = &directive.0;
 			// Now get the corresponding Bone if it exists
 			let bone = cmds.get(command_name);
 			let bone = match bone {
                 Some(bone) => bone,
-                None => return Err(format!("Error in executing Bones directive: subcommand '{}' not found. This is probably a typo in your Bonnie configuration.", command_name)),
+                None => bail!("Error in executing Bones directive: subcommand '{}' not found. This is probably a typo in your bx configuration.", command_name),
             };
 			// Now execute it and get the exit code (this may recursively call this function if ordered subcommands are nested, but that dcoesn't matter)
-			// Bonnie treats all command cores as futures for an exit code, we don't care about any side effects (printing, server execution, etc.)
+			// bx treats all command cores as futures for an exit code, we don't care about any side effects (printing, server execution, etc.)
 			let exit_code = bone.run(command_name, verbose, output)?;
 			// Iterate over the conditions given and check if any of them match that exit code
 			// We'll run the first one that does (even if more do after that)
-			// TODO document the above behaviour
 			let mut final_exit_code = exit_code;
 			for (operator, directive) in directive.1.iter() {
 				if operator.matches(&exit_code) {
@@ -110,7 +105,7 @@ pub struct BonesDirective(String, HashMap<BonesOperator, Option<BonesDirective>>
 struct RawBonesDirective(String, HashMap<String, Option<RawBonesDirective>>);
 impl RawBonesDirective {
 	// This converts to a `BonesDirective` by parsing the operator strings into full operators
-	fn convert_to_proper(&self) -> Result<BonesDirective, String> {
+	fn convert_to_proper(&self) -> Result<BonesDirective> {
 		// Parse the conditions `HashMap`
 		let mut parsed_conditions: HashMap<BonesOperator, Option<BonesDirective>> = HashMap::new();
 		for (raw_operator, raw_directive) in &self.1 {
@@ -194,20 +189,20 @@ impl BonesOperator {
 
 		matches(exit_code, self)
 	}
-	// Parses a string operator given in a directive string into a fully-fledged variant
-	fn parse_str(raw_operator: &str) -> Result<Self, String> {
-		// Attempt to parse it as an exit code integer (we'll use that twice)
+	fn parse_str(raw_operator: &str) -> Result<Self> {
 		let exit_code = raw_operator.parse::<i32>();
 		let operator = match raw_operator {
-			_ if exit_code.is_ok() => BonesOperator::ExitCode(exit_code.unwrap()),
+			_ if exit_code.is_ok() => {
+				BonesOperator::ExitCode(exit_code.expect("already checked is_ok"))
+			}
 			_ if raw_operator.starts_with('!') => {
 				let exit_code_str = raw_operator.get(1..);
 				let exit_code = match exit_code_str {
                     Some(exit_code) => match exit_code.parse::<i32>() {
                         Ok(exit_code) => exit_code,
-                        Err(_) => return Err(format!("Couldn't parse exit code as 32-bit integer from `NotExitCode` operator invocation '{}'.", raw_operator))
+                        Err(_) => bail!("Couldn't parse exit code as 32-bit integer from `NotExitCode` operator invocation '{}'.", raw_operator)
                     },
-                    None => return Err(format!("Couldn't extract exit code from `NotExitCode` operator invocation '{}'.", raw_operator))
+                    None => bail!("Couldn't extract exit code from `NotExitCode` operator invocation '{}'.", raw_operator)
                 };
 				BonesOperator::NotExitCode(exit_code)
 			}
@@ -236,10 +231,10 @@ impl BonesOperator {
 				BonesOperator::Intersection(operators)
 			}
 			_ => {
-				return Err(format!(
+				bail!(
 					"Unrecognized operator '{}' in Bones directive.",
 					raw_operator
-				))
+				)
 			}
 		};
 
@@ -253,20 +248,15 @@ pub struct BonesCore {
 	pub shell: Vec<String>, // Vector of executable and arguments thereto
 }
 impl BonesCore {
-	fn execute(
-		&self,
-		name: &str,
-		verbose: bool,
-		output: &mut impl std::io::Write,
-	) -> Result<i32, String> {
+	fn execute(&self, name: &str, verbose: bool, output: &mut impl std::io::Write) -> Result<i32> {
 		// Get the executable from the shell (the first element)
 		let executable = self.shell.first();
 		let executable = match executable {
             // If the shell is not universal to all stages, we return an error
             // We should not have to interpolate anything into the executable
-            Some(executable) if executable.contains("{COMMAND}") => return Err(format!("The shell for the command '{}' attempts to interpolate the command in its first element, which was expected to be a string literal with no interpolation, as it is an executable.", name)),
+            Some(executable) if executable.contains("{COMMAND}") => bail!("The shell for the command '{}' attempts to interpolate the command in its first element, which was expected to be a string literal with no interpolation, as it is an executable.", name),
             Some(executable) => executable,
-            None => return Err(format!("The shell for the command '{}' is empty. Shells must contain at least one element as an executable to invoke.", name))
+            None => bail!("The shell for the command '{}' is empty. Shells must contain at least one element as an executable to invoke.", name)
         };
 		// Get the arguments to that executable
 		// We interpolate the command in where necessary
@@ -294,31 +284,19 @@ impl BonesCore {
 			.expect("Failed to write verbose information.");
 		}
 		// Prepare the child process
-		let child = OsCommand::new(executable).args(args).spawn();
-
-		// The child must be mutable so we can wait for it to finish later
-		let mut child = match child {
-            Ok(child) => child,
-            Err(_) => return Err(
-                format!(
-                    "Command '{}' failed to run. This doesn't mean the command produced an error, but that the process couldn't even be initialised.",
-                    &name
-                )
-            )
-        };
+		let mut child = OsCommand::new(executable).args(&args).spawn()
+			.with_context(|| format!(
+				"Command '{}' failed to run. This doesn't mean the command produced an error, but that the process couldn't even be initialised.",
+				name
+			))?;
 		// If we don't wait on the child, any long-running commands will print into the prompt because the parent terminates first (try it yourself with the `long` command)
-		let child = child.wait();
-		let exit_status = match child {
-            Ok(exit_status) => exit_status,
-            Err(_) => return Err(
-                format!(
-                    "Command '{}' didn't run (parent unable to wait on child process). See the Bonnie documentation for more details on this problem.",
-                    &name
-                )
-            )
-        };
+		let exit_status = child.wait()
+			.with_context(|| format!(
+				"Command '{}' didn't run (parent unable to wait on child process). See the bx documentation for more details on this problem.",
+				name
+			))?;
 
-		// We now need to pass that exit code through so Bonnie can terminate with it (otherwise `&&` chaining doesn't work as expected, etc.)
+		// We now need to pass that exit code through so bx can terminate with it (otherwise `&&` chaining doesn't work as expected, etc.)
 		// This will work on both Unix and Windows (and so theoretically any other weird OSes that make any sense at all)
 		Ok(match exit_status.code() {
 			Some(exit_code) => exit_code,       // If we have an exit code, use it
@@ -332,7 +310,7 @@ impl BonesCore {
 // The logic of parsing and executing is made separate so we can cache the parsed form for large configuration files
 // This function basically interprets a miniature programming language
 // Right now, this is quite slow due to its extensive use of RegEx, any ideas to speed it up would be greatly appreciated!
-pub fn parse_directive_str(directive_str: &str) -> Result<BonesDirective, String> {
+pub fn parse_directive_str(directive_str: &str) -> Result<BonesDirective> {
 	// Check if we have the alternative super-simple form (just one command, rare but easy to parse)
 	let directive_json = if !directive_str.contains('{') {
 		"[\"".to_string() + directive_str + "\", {}]"
@@ -354,11 +332,8 @@ pub fn parse_directive_str(directive_str: &str) -> Result<BonesDirective, String
 		re3.replace_all(&stage3, sub3).to_string()
 	};
 	// Now we can deserialize that directly using Serde
-	let raw_directive = serde_json::from_str::<RawBonesDirective>(&directive_json);
-	let raw_directive = match raw_directive {
-        Ok(raw_directive) => raw_directive,
-        Err(err) => return Err(format!("The following error occurred while parsing a Bones directive: '{}'. Please note that your code is transformed in several ways before this step, so you may need to refer to the documentation on Bones directives.", err))
-    };
+	let raw_directive = serde_json::from_str::<RawBonesDirective>(&directive_json)
+		.context("The following error occurred while parsing a Bones directive. Please note that your code is transformed in several ways before this step, so you may need to refer to the documentation on Bones directives.")?;
 	// Now we handle the operators
 	let directive = raw_directive.convert_to_proper()?;
 

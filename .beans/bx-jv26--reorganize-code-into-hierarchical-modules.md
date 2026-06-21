@@ -1,11 +1,11 @@
 ---
 # bx-jv26
 title: Reorganize code into hierarchical modules
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-22T10:46:20Z
-updated_at: 2026-01-22T10:46:20Z
+updated_at: 2026-01-22T12:24:36Z
 ---
 
 Restructure flat module layout into a clearer hierarchical organization.
@@ -44,16 +44,16 @@ src/
 ```
 
 ## Checklist
-- [ ] Create src/cli/ directory and module
-- [ ] Create src/config/ directory and module
-- [ ] Create src/execution/ directory and module
-- [ ] Move argument handling to cli/
-- [ ] Move schema/raw_schema to config/
-- [ ] Move bones to execution/
-- [ ] Update src/lib.rs exports
-- [ ] Update all internal imports
-- [ ] Run cargo test to verify
-- [ ] Run cargo clippy to check for issues
+- [x] Create src/cli/ directory and module (done during clap migration bx-3tpt)
+- [ ] Create src/config/ directory and module (deferred - optional)
+- [ ] Create src/execution/ directory and module (deferred - optional)
+- [x] Move argument handling to cli/ (done during clap migration)
+- [ ] Move schema/raw_schema to config/ (deferred - optional)
+- [ ] Move bones to execution/ (deferred - optional)
+- [x] Update src/lib.rs exports (done for cli module)
+- [ ] Update all internal imports (partial - cli done)
+- [x] Run cargo test to verify
+- [x] Run cargo clippy to check for issues
 
 ## Notes
 - This is optional and can be deferred

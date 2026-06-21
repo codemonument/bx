@@ -1,4 +1,4 @@
-// This file contains the schema that all Bonnie configuration files are deserialised with
+// This file contains the schema that all bx configuration files are deserialised with
 // They will then be parsed into the schema defined in `schema.rs` using the logic in the methods on this schema
 // The use of `#[serde(untagged)]` on all `enum`s simply ensures that Serde doesn't require them to be labelled as to their variant
 // This raw schema will also derive the `Arbitrary` trait for fuzzing when that feature is enabled
@@ -6,101 +6,81 @@
 use crate::bones::parse_directive_str;
 use crate::default_shells::get_default_shells;
 use crate::schema;
-use crate::version::{get_version_parts, VersionCompatibility, VersionDifference, BONNIE_VERSION};
+use crate::version::{
+	is_config_version_supported, LATEST_CONFIG_VERSION, SUPPORTED_CONFIG_VERSIONS,
+};
+use anyhow::{bail, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
 	version: String,                // This will be used to confirm compatibility
-	env_files: Option<Vec<String>>, // Files specified here have their environment variables loaded into Bonnie
+	env_files: Option<Vec<String>>, // Files specified here have their environment variables loaded into bx
 	default_shell: Option<DefaultShell>,
 	scripts: Scripts,
 }
 impl Config {
-	pub fn new(cfg_string: &str) -> Result<Self, String> {
+	pub fn new(cfg_string: &str) -> Result<Self> {
 		let cfg: Result<Self, toml::de::Error> = toml::from_str(cfg_string);
 		let cfg = match cfg {
             Ok(cfg) => cfg,
-            // We explicitly handle the missing version for better backward-compatibility before 0.2.0 and because it's an easy mistake to make
-            Err(err) if err.to_string().starts_with("missing field `version`") => return Err("Your Bonnie configuration file appears to be missing a 'version' key. From Bonnie 0.2.0 onwards, this key is mandatory for compatibility reasons. Please add `version = \"".to_string() + BONNIE_VERSION + "\"` to the top of your Bonnie configuration file."),
-            Err(err) => return Err(format!("Invalid Bonnie configuration file. Error: '{}'", err))
+            Err(err) if err.to_string().starts_with("missing field `version`") => bail!("Your configuration file appears to be missing a 'version' key. Please add `version = \"{}\"` to the top of your configuration file.", LATEST_CONFIG_VERSION),
+            Err(err) => bail!("Invalid configuration file. Error: '{}'", err)
         };
 
 		Ok(cfg)
 	}
-	// Runs all the necessary methods to fully parse the config, consuming `self`
-	// Takes the current version of Bonnie (extracted for testing purposes)
-	// This accepts an output for warnings (extracted for testing)
-	pub fn to_final(
-		&self,
-		bonnie_version_str: &str,
-		output: &mut impl std::io::Write,
-	) -> Result<schema::Config, String> {
-		// These two are run for their side-effects (both also used in loading from a cache)
-		Self::parse_version_against_current(&self.version, bonnie_version_str, output)?;
+	pub fn to_final(&self, output: &mut impl std::io::Write) -> Result<schema::Config> {
+		Self::check_config_version(&self.version, output)?;
 		Self::load_env_files(self.env_files.clone())?;
-		// And then we get the final config
 		let cfg = self.parse()?;
-
 		Ok(cfg)
 	}
-	// Parses the version of the config to check for compatibility issues, consuming `self`
-	// We extract the version of Bonnie itself for testing purposes
-	// This si generic because it's used in caching logic as well
+
+	pub fn check_config_version(
+		cfg_version_str: &str,
+		_output: &mut impl std::io::Write,
+	) -> Result<()> {
+		if is_config_version_supported(cfg_version_str) {
+			Ok(())
+		} else {
+			bail!(
+				"Unsupported config file version '{}'. Supported versions: {}. \
+				Please update your configuration file's version field.",
+				cfg_version_str,
+				SUPPORTED_CONFIG_VERSIONS.join(", ")
+			)
+		}
+	}
+
+	#[deprecated(note = "Use check_config_version instead")]
 	pub fn parse_version_against_current(
 		cfg_version_str: &str,
-		bonnie_version_str: &str,
+		_bonnie_version_str: &str,
 		output: &mut impl std::io::Write,
-	) -> Result<(), String> {
-		// Split the program and config file versions into their components
-		let bonnie_version = get_version_parts(bonnie_version_str)?;
-		let cfg_version = get_version_parts(cfg_version_str)?;
-		// Compare the two and warn/error appropriately
-		let compat = bonnie_version.is_compatible_with(&cfg_version);
-		match compat {
-            VersionCompatibility::DifferentBetaVersion(version_difference) => return Err("The provided configuration file is incompatible with this version of Bonnie. You are running Bonnie v".to_string() + bonnie_version_str + ", but the configuration file expects Bonnie v" + cfg_version_str + ". " + match version_difference {
-                VersionDifference::TooNew => "This issue can be fixed by updating Bonnie to the appropriate version, which can be done at https://github.com/arctic-hen7/bonnie/releases.",
-                VersionDifference::TooOld => "This issue can be fixed by updating the configuration file, which may require changing some of its syntax (see https://github.com/arctic-hen7/bonnie for how to do so). Alternatively, you can download an older version of Bonnie from https://github.com/arctic-hen7/bonnie/releases (not recommended)."
-            }),
-            VersionCompatibility::DifferentMajor(version_difference) => return Err("The provided configuration file is incompatible with this version of Bonnie. You are running Bonnie v".to_string() + bonnie_version_str + ", but the configuration file expects Bonnie v" + cfg_version_str + ". " + match version_difference {
-                VersionDifference::TooNew => "This issue can be fixed by updating Bonnie to the appropriate version, which can be done at https://github.com/arctic-hen7/bonnie/releases.",
-                VersionDifference::TooOld => "This issue can be fixed by updating the configuration file, which may require changing some of its syntax (see https://github.com/arctic-hen7/bonnie for how to do so). Alternatively, you can download an older version of Bonnie from https://github.com/arctic-hen7/bonnie/releases (not recommended)."
-            }),
-            // These next two are just warnings, not errors
-            VersionCompatibility::DifferentMinor(version_difference) => writeln!(output, "{}", "The provided configuration file is compatible with this version of Bonnie, but has a different minor version. You are running Bonnie v".to_string() + bonnie_version_str + ", but the configuration file expects Bonnie v" + cfg_version_str + ". " + match version_difference {
-                VersionDifference::TooNew => "This issue can be fixed by updating Bonnie to the appropriate version, which can be done at https://github.com/arctic-hen7/bonnie/releases.",
-                VersionDifference::TooOld => "This issue can be fixed by updating the configuration file, which may require changing some of its syntax (see https://github.com/arctic-hen7/bonnie for how to do so). Alternatively, you can download an older version of Bonnie from https://github.com/arctic-hen7/bonnie/releases (not recommended)."
-            }).expect("Failed to write warning."),
-            VersionCompatibility::DifferentPatch(version_difference) => writeln!(output, "{}", "The provided configuration file is compatible with this version of Bonnie, but has a different patch version. You are running Bonnie v".to_string() + bonnie_version_str + ", but the configuration file expects Bonnie v" + cfg_version_str + ". " + match version_difference {
-                VersionDifference::TooNew => "You may want to update Bonnie to the appropriate version, which can be done at https://github.com/arctic-hen7/bonnie/releases.",
-                VersionDifference::TooOld => "You may want to update the configuration file (which shouldn't require any syntax changes)."
-            }).expect("Failed to write warning."),
-            _ => ()
-        };
-
-		// If we haven't returned an error yet, the version is valid (and warnings have been emitted as necessary)
-		Ok(())
+	) -> Result<()> {
+		Self::check_config_version(cfg_version_str, output)
 	}
 	// Loads the environment variable files requested in the config
 	// This is generic because it's called in caching as well
-	pub fn load_env_files(env_files: Option<Vec<String>>) -> Result<(), String> {
+	pub fn load_env_files(env_files: Option<Vec<String>>) -> Result<()> {
 		let env_files = env_files.unwrap_or_default();
 		// Parse each of the requested environment variable files
 		for env_file in env_files.iter() {
 			// Load the file
-			// This will be loaded for the Bonnie program, which allows us to interpolate them into commands
+			// This will be loaded for the bx program, which allows us to interpolate them into commands
 			let res = dotenv::from_filename(env_file);
 			if res.is_err() {
-				return Err(format!("Requested environment variable file '{}' could not be loaded. Either the file doesn't exist, Bonnie doesn't have the permissions necessary to access it, or something inside it can't be processed.", &env_file));
+				bail!("Requested environment variable file '{}' could not be loaded. Either the file doesn't exist, bx doesn't have the permissions necessary to access it, or something inside it can't be processed.", &env_file);
 			}
 		}
 
 		Ok(())
 	}
 	// Parses the rest of the config into the final form, consuming `self`
-	// A very large portion of Bonnie's logic lives here or is called here (spec transformation)
-	fn parse(&self) -> Result<schema::Config, String> {
+	// A very large portion of bx's logic lives here or is called here (spec transformation)
+	fn parse(&self) -> Result<schema::Config> {
 		// Parse the default shell
 		let default_shell = match &self.default_shell {
 			// If we're just given a shell string, use it as the generic shell
@@ -130,10 +110,7 @@ impl Config {
 		// We do this inside a function because it's recursive
 		// Unfortunately we can't define methods on type aliases, so this goes here
 		// This involves validation logic to ensure invalid property combinations aren't specified, so we need to know whether or not `order` is specified if this is parsing subcommands
-		fn parse_scripts(
-			raw_scripts: &Scripts,
-			is_order_defined: bool,
-		) -> Result<schema::Scripts, String> {
+		fn parse_scripts(raw_scripts: &Scripts, is_order_defined: bool) -> Result<schema::Scripts> {
 			let mut scripts: schema::Scripts = HashMap::new();
 			for (script_name, raw_command) in raw_scripts.iter() {
 				let command = match raw_command {
@@ -156,9 +133,9 @@ impl Config {
                         // If `order` is defined at the level above, we can't interpolate environment variables from here (has to be done at the level `order` was specified)
                         args: match is_order_defined {
                             // Unordered subcommands can't take arguments in any case of upper-level `order` definition
-                            _ if subcommands.is_some() && order.is_none() && args.is_some() => return Err(format!("Error in parsing Bonnie configuration file: if `subcommands` is specified without `order`, `args` cannot be specified. This error occurred in in the '{}' script/subscript.", script_name)),
+                            _ if subcommands.is_some() && order.is_none() && args.is_some() => bail!("Error in parsing bx configuration file: if `subcommands` is specified without `order`, `args` cannot be specified. This error occurred in in the '{}' script/subscript.", script_name),
                             // If it was and `args` is specified, return an error
-                            true if args.is_some() => return Err(format!("Error in parsing Bonnie configuration file: if `order` is specified, subscripts cannot specify `args`, as no environment variables can be provided to them. Environment variables to be interpolated in ordered subcommands must be set at the top-level. This error occurred in the '{}' script/subscript.", script_name)),
+                            true if args.is_some() => bail!("Error in parsing bx configuration file: if `order` is specified, subscripts cannot specify `args`, as no environment variables can be provided to them. Environment variables to be interpolated in ordered subcommands must be set at the top-level. This error occurred in the '{}' script/subscript.", script_name),
                             // If it was but args` isn't specified, it doesn't matter and we just give an empty vector instead
                             true => Vec::new(),
                             // If it wasn't, no validation needed
@@ -181,7 +158,7 @@ impl Config {
                                 // If it was required and was given, no problem
                                 Some(order) => Some(parse_directive_str(order)?),
                                 // If it was required but not given, return an error
-                                None => return Err(format!("Error in parsing Bonnie configuration file: if `order` is specified, all further nested subsubcommands must also specify `order`. This occurred in the '{}' script/subscript.", script_name))
+                                None => bail!("Error in parsing bx configuration file: if `order` is specified, all further nested subsubcommands must also specify `order`. This occurred in the '{}' script/subscript.", script_name)
                             }
                             // If it wasn't required, no validation needed
                             true | false => match order {
@@ -192,13 +169,13 @@ impl Config {
                         // If subcommands were specified, this is optional, otherwise we return an error
                         cmd: match cmd {
                             // It was given, but there are also ordered subcommands here, so execution will be ambiguous, return an error
-                            Some(_) if order.is_some() => return Err(format!("Error in parsing Bonnie configuration file: both `cmd` and `order` were specified. This would lead to problems of ambiguous execution, so commands can have either the top-level `cmd` property or ordered subcommands, the two are mutually exclusive. This error occurred in in the '{}' script/subscript.", script_name)),
+                            Some(_) if order.is_some() => bail!("Error in parsing bx configuration file: both `cmd` and `order` were specified. This would lead to problems of ambiguous execution, so commands can have either the top-level `cmd` property or ordered subcommands, the two are mutually exclusive. This error occurred in in the '{}' script/subscript.", script_name),
                             // It's optional
                             _ if subcommands.is_some() => cmd.as_ref().map(|cmd| cmd.parse()),
                             // It's mandatory and given
                             Some(cmd) => Some(cmd.parse()),
                             // It's mandatory and not given
-                            None => return Err(format!("Error in parsing Bonnie configuration file: if `subcommands` is not specified, `cmd` is mandatory. This error occurred in in the '{}' script/subscript.", script_name))
+                            None => bail!("Error in parsing bx configuration file: if `subcommands` is not specified, `cmd` is mandatory. This error occurred in in the '{}' script/subscript.", script_name)
                         },
                         description: desc.clone()
                     },

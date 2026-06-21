@@ -1,7 +1,8 @@
-// This file contains the final schema into which all Bonnie configurations are parsed
+// This file contains the final schema into which all bx configurations are parsed
 // This does not reflect the actual syntax used in the configuration files themselves (see `raw_schema.rs`)
 
 use crate::bones::{Bone, BonesCommand, BonesCore, BonesDirective};
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
@@ -18,37 +19,36 @@ impl Config {
 	// Gets the command requested by the given vector of arguments
 	// The given arguments are expected not to include the first program argument (`bonnie` or the like)
 	// Returns the command itself, its name, and the arguments relevant thereto
-	pub fn get_command_for_args(
-		&self,
-		args: &[String],
-	) -> Result<(&Command, String, Vec<String>), String> {
+	pub fn get_command_for_args(&self, args: &[String]) -> Result<(&Command, String, Vec<String>)> {
 		// We do everything in here for recursion
 		// We need to know if this is the first time so we know to say 'command' or 'subcommand' in error messages
 		fn get_command_for_scripts_and_args<'a>(
 			scripts: &'a Scripts,
 			args: &[String],
 			first_time: bool,
-		) -> Result<(&'a Command, String, Vec<String>), String> {
+		) -> Result<(&'a Command, String, Vec<String>)> {
 			// Get the name of the command
 			let command_name = args.first();
 			let command_name = match command_name {
-                Some(command_name) => command_name,
-                None => {
-                    return Err(match first_time {
-                        true => String::from("Please provide a command to run. You can use `bonnie help` to see the available commands in this directory."),
-                        false => String::from("Please provide a subcommand to run. You can use `bonnie help` to see the available commands in this directory."),
-                    })
-                }
-            };
+				Some(command_name) => command_name,
+				None => {
+					if first_time {
+						bail!("Please provide a command to run. You can use `bx help` to see the available commands in this directory.");
+					} else {
+						bail!("Please provide a subcommand to run. You can use `bx help` to see the available commands in this directory.");
+					}
+				}
+			};
 			// Try to find it among those we know
 			let command = scripts.get(command_name);
 			let command = match command {
 				Some(command) => command,
 				None => {
-					return Err(match first_time {
-						true => format!("Unknown command '{}'.", command_name),
-						false => format!("Unknown subcommand '{}'.", command_name),
-					})
+					if first_time {
+						bail!("Unknown command '{}'.", command_name);
+					} else {
+						bail!("Unknown subcommand '{}'.", command_name);
+					}
 				}
 			};
 			// We found it, check if it has any unordered subcommands or a root-level command
@@ -96,10 +96,10 @@ impl Config {
 	}
 	// Provides a documentation message for this configuration
 	// If a single command name is given, only it will be documented
-	pub fn document(&self, cmd_to_doc: Option<String>) -> Result<String, String> {
+	pub fn document(&self, cmd_to_doc: Option<String>) -> Result<String> {
 		// Handle metadata about the whole file first with a preamble
 		let mut meta = format!(
-            "This is the help page for a configuration file. If you'd like help about Bonnie generally, run `bonnie -h` instead.
+            "This is the help page for a configuration file. If you'd like help about bx generally, run `bx -h` instead.
 Version: {}",
             self.version,
         );
@@ -117,7 +117,7 @@ Version: {}",
 			let cmd = self.scripts.get(&cmd_name);
 			let cmd = match cmd {
                 Some(cmd) => cmd,
-                None => return Err(format!("Command '{}' not found. You can see all supported commands by running `bonnie help`.", cmd_name))
+                None => bail!("Command '{}' not found. You can see all supported commands by running `bx help`.", cmd_name)
             };
 			msg = cmd.document(&cmd_name);
 		} else {
@@ -192,7 +192,7 @@ impl Command {
 		name: &str,
 		prog_args: &[String],
 		default_shell: &DefaultShell,
-	) -> Result<Bone, String> {
+	) -> Result<Bone> {
 		let bone = self.prepare_internal(name, prog_args, default_shell, None)?;
 
 		Ok(bone)
@@ -205,7 +205,7 @@ impl Command {
 		prog_args: &[String],
 		default_shell: &DefaultShell,
 		top_level_args: Option<&[String]>,
-	) -> Result<Bone, String> {
+	) -> Result<Bone> {
 		let args = match top_level_args {
 			Some(args) => args,
 			None => &self.args,
@@ -215,7 +215,10 @@ impl Command {
 			// We have either a direct command or a parent command that has irrelevant subcommands, either way we're interpolating into `cmd`
 			// Get the vector of command wrappers
 			// Assuming the transformation logic works, an error can't occur here
-			let command_wrapper = self.cmd.as_ref().unwrap();
+			let command_wrapper = self
+				.cmd
+				.as_ref()
+				.expect("cmd exists when subcommands is none or cmd is some");
 			// Interpolate for each individual command
 			// We have to do this in a for loop for `?`
 			let mut cmd_strs: Vec<String> = Vec::new();
@@ -245,17 +248,19 @@ impl Command {
 			// Otherwise error messages will relate to irrelevant subcommands
 			// We don't check the case where too few arguments were provided because that's irrelevant (think about it)
 			if at_top_level && args.len() > prog_args.len() {
-				return Err(
-                    format!(
-                        "The command '{command}' requires {num_required_args} argument(s), but {num_given_args} argument(s) were provided (too few). Please provide all the required arguments.",
-                        command=name,
-                        num_required_args=args.len(),
-                        num_given_args=&prog_args.len()
-                    )
+				bail!(
+                    "The command '{}' requires {} argument(s), but {} argument(s) were provided (too few). Please provide all the required arguments.",
+                    name,
+                    args.len(),
+                    prog_args.len()
                 );
 			}
-			// We `.unwrap()` here because we know more than the compiler
-			for (subcommand_name, subcommand) in self.subcommands.as_ref().unwrap().iter() {
+			for (subcommand_name, subcommand) in self
+				.subcommands
+				.as_ref()
+				.expect("checked is_some above")
+				.iter()
+			{
 				// Parse the subcommand
 				// We parse in the top-level arguments because ordered subcommands can't take their own, they inherit from this level (or the level this level inherits from, etc.)
 				let cmd = subcommand.prepare_internal(
@@ -268,9 +273,10 @@ impl Command {
 			}
 
 			// Now we return a complex `Bone` (because it contains a `BonesCommand` with a directive)
-			Ok(Bone::Complex(
-				BonesCommand::new(self.order.as_ref().unwrap(), cmds), // We know more than the compiler by the check above
-			))
+			Ok(Bone::Complex(BonesCommand::new(
+				self.order.as_ref().expect("checked is_some above"),
+				cmds,
+			)))
 		} else {
 			// This should not be possible!
 			panic!("Critical logic failure in preparing command. You should report this as a bug.");
@@ -285,17 +291,15 @@ impl Command {
 		name: &str,
 		args: &[String],
 		prog_args: &[String],
-	) -> Result<(String, Vec<String>), String> {
+	) -> Result<(String, Vec<String>)> {
 		// Check if the correct number of arguments was provided
 		// Even if we're inserting the rest later, we still need the mandatory ones
 		if args.len() > prog_args.len() {
-			return Err(
-                format!(
-                    "The command '{command}' requires {num_required_args} argument(s), but {num_given_args} argument(s) were provided (too few). Please provide all the required arguments.",
-                    command=name,
-                    num_required_args=args.len(),
-                    num_given_args=&prog_args.len()
-                )
+			bail!(
+                "The command '{}' requires {} argument(s), but {} argument(s) were provided (too few). Please provide all the required arguments.",
+                name,
+                args.len(),
+                prog_args.len()
             );
 		}
 		// We don't warn if there are too many and we're not inserting the rest with `%%` later because that would mean checking every potential subcommand for `%%` as well if they exist
@@ -314,20 +318,20 @@ impl Command {
 		// We do this by getting the part of slice after the specific arguments
 		let (_, remaining_args) = prog_args.split_at(args.len());
 
-		Ok((with_args, remaining_args.to_vec())) // FIXME
+		Ok((with_args, remaining_args.to_vec()))
 	}
 	// Interpolates environment variables
 	// This takes a string to interpolate into, the environment variables to interpolate, and the name of the command
 	// This doesn't take `self` so the order is open
 	// This returns the readied command string only, or an error relating to environment variable loading
-	fn interpolate_env_vars(cmd_str: &str, env_vars: &[String]) -> Result<String, String> {
+	fn interpolate_env_vars(cmd_str: &str, env_vars: &[String]) -> Result<String> {
 		let mut with_env_vars = cmd_str.to_string();
 		for env_var_name in env_vars.iter() {
 			// Load the environment variable
 			let env_var = env::var(env_var_name);
 			let env_var = match env_var {
                 Ok(env_var) => env_var,
-                Err(_) => return Err(format!("The environment variable '{}' couldn't be loaded. This means it either hasn't been defined (you may need to load another environment variable file) or contains invalid characters.", env_var_name))
+                Err(_) => bail!("The environment variable '{}' couldn't be loaded. This means it either hasn't been defined (you may need to load another environment variable file) or contains invalid characters.", env_var_name)
             };
 			// Interpolate it into the command itself
 			let to_replace = "%".to_string() + env_var_name;

@@ -1,11 +1,11 @@
 ---
 # bx-fktp
 title: Migrate error handling to anyhow
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-01-22T09:25:47Z
-updated_at: 2026-01-22T09:25:47Z
+updated_at: 2026-01-22T11:13:59Z
 ---
 
 Replace `Result<T, String>` pattern with `anyhow::Result<T>` for better error handling.
@@ -17,18 +17,18 @@ Replace `Result<T, String>` pattern with `anyhow::Result<T>` for better error ha
 - Industry standard for Rust CLI applications
 
 ## Checklist
-- [ ] Add `anyhow = "1.0"` to Cargo.toml
-- [ ] Update src/bin/main.rs: Change `fn core() -> Result<i32, String>` to `fn core() -> anyhow::Result<i32>`
-- [ ] Update src/bin/main.rs: Change `fn real_main() -> i32` to return `anyhow::Result<()>`
-- [ ] Update src/get_cfg.rs: `get_cfg()` to return `anyhow::Result<String>`
-- [ ] Update src/cache.rs: All functions to use `anyhow::Result`
-- [ ] Update src/init.rs: `init()` to use `anyhow::Result`
-- [ ] Update src/raw_schema.rs: Config methods to use `anyhow::Result`
-- [ ] Update src/schema.rs: All Result-returning functions
-- [ ] Update src/bones.rs: All Result-returning functions
-- [ ] Add `.context()` calls for meaningful error messages
-- [ ] Run `cargo test` to verify all tests pass
-- [ ] Run `cargo clippy` to check for issues
+- [x] Add `anyhow = "1.0"` to Cargo.toml
+- [x] Update src/bin/main.rs: Change `fn core() -> Result<i32, String>` to `fn core() -> anyhow::Result<i32>`
+- [x] Update src/bin/main.rs: Change `fn real_main() -> i32` to return `anyhow::Result<()>` (kept as i32 for proper exit code handling)
+- [x] Update src/get_cfg.rs: `get_cfg()` to return `anyhow::Result<String>`
+- [x] Update src/cache.rs: All functions to use `anyhow::Result`
+- [x] Update src/init.rs: `init()` to use `anyhow::Result`
+- [x] Update src/raw_schema.rs: Config methods to use `anyhow::Result`
+- [x] Update src/schema.rs: All Result-returning functions
+- [x] Update src/bones.rs: All Result-returning functions
+- [x] Add `.context()` calls for meaningful error messages
+- [x] Run `cargo test` to verify all tests pass
+- [x] Run `cargo clippy` to check for issues
 
 ## Example Migration
 ```rust

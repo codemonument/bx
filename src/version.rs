@@ -1,16 +1,24 @@
-// This file defines the current version of Bonnie
-// This MUST be updated before all releases!
+pub const CLI_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub const BONNIE_VERSION: &str = "0.3.2";
+pub const SUPPORTED_CONFIG_VERSIONS: &[&str] = &["0.3.2"];
 
-// The different between two major/minor/patch versions
+pub const LATEST_CONFIG_VERSION: &str = "0.3.2";
+
+#[deprecated(note = "Use CLI_VERSION for display, SUPPORTED_CONFIG_VERSIONS for validation")]
+pub const BONNIE_VERSION: &str = LATEST_CONFIG_VERSION;
+
+pub fn is_config_version_supported(version: &str) -> bool {
+	SUPPORTED_CONFIG_VERSIONS.contains(&version)
+}
+
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum VersionDifference {
 	TooOld,
 	TooNew,
 }
 
-// The compatibility of two versions with one another
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum VersionCompatibility {
 	Identical,
@@ -20,15 +28,15 @@ pub enum VersionCompatibility {
 	DifferentBetaVersion(VersionDifference), // In beta, this also means the versions are incompatible
 }
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 pub struct Version {
 	patch: u16,
 	minor: u16,
 	major: u16,
 }
+#[allow(dead_code)]
 impl Version {
-	// Compares this with another version returns their compatibility
-	// It will return an embedded version difference as to whether the version being compared to is too old/new or nothing if they're identical
 	pub fn is_compatible_with(&self, comparison: &Version) -> VersionCompatibility {
 		let compatibility = match self.major {
 			_ if self.major > comparison.major => {
@@ -66,33 +74,33 @@ impl Version {
 	}
 }
 
-// This breaks a given version down into major/minor/patch numbers
+#[allow(dead_code)]
 pub fn get_version_parts(version_str: &str) -> Result<Version, String> {
 	let split: Vec<&str> = version_str.split('.').collect();
 	// Get each component of that
 	let patch = split.get(2)
         .ok_or_else(|| String::from(
-            "Couldn't extract the patch version number from the given version string. If the version string in your Bonnie configuration file is definitely of the form 'x.y.z', you should report this as a bug."
+            "Couldn't extract the patch version number from the given version string. If the version string in your bx configuration file is definitely of the form 'x.y.z', you should report this as a bug."
         ))?
         .parse::<u16>()
         .map_err(|_| String::from(
-            "Couldn't serialize the patch version number from the given version string into an integer. If the version string in your Bonnie configuration file is definitely of the form 'x.y.z', where each of those are integers, you should report this as a bug."
+            "Couldn't serialize the patch version number from the given version string into an integer. If the version string in your bx configuration file is definitely of the form 'x.y.z', where each of those are integers, you should report this as a bug."
         ))?;
 	let minor = split.get(1)
         .ok_or_else(|| String::from(
-            "Couldn't extract the minor version number from the given version string. If the version string in your Bonnie configuration file is definitely of the form 'x.y.z', you should report this as a bug."
+            "Couldn't extract the minor version number from the given version string. If the version string in your bx configuration file is definitely of the form 'x.y.z', you should report this as a bug."
         ))?
         .parse::<u16>()
         .map_err(|_| String::from(
-            "Couldn't serialize the minor version number from the given version string into an integer. If the version string in your Bonnie configuration file is definitely of the form 'x.y.z', where each of those are integers, you should report this as a bug."
+            "Couldn't serialize the minor version number from the given version string into an integer. If the version string in your bx configuration file is definitely of the form 'x.y.z', where each of those are integers, you should report this as a bug."
         ))?;
 	let major = split.first()
         .ok_or_else(|| String::from(
-            "Couldn't extract the major version number from the given version string. If the version string in your Bonnie configuration file is definitely of the form 'x.y.z', you should report this as a bug."
+            "Couldn't extract the major version number from the given version string. If the version string in your bx configuration file is definitely of the form 'x.y.z', you should report this as a bug."
         ))?
         .parse::<u16>()
         .map_err(|_| String::from(
-            "Couldn't serialize the major version number from the given version string into an integer. If the version string in your Bonnie configuration file is definitely of the form 'x.y.z', where each of those are integers, you should report this as a bug."
+            "Couldn't serialize the major version number from the given version string into an integer. If the version string in your bx configuration file is definitely of the form 'x.y.z', where each of those are integers, you should report this as a bug."
         ))?;
 	// Construct a version
 	Ok(Version {

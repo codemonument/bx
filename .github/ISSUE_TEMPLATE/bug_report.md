@@ -11,7 +11,7 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **Minimum reproducible configuration**
-The simplest `bonnie.toml` that shows the error and the command to run that shows it.
+The simplest `bx.toml` that shows the error and the command to run that shows it.
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.

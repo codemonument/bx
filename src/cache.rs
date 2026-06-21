@@ -1,21 +1,25 @@
-use crate::version::BONNIE_VERSION;
 use crate::{raw_schema, schema};
+use anyhow::{bail, Context, Result};
 use std::env;
 use std::fs;
 
-// This can be changed by the user with the `BONNIE_CACHE` environment variable
-pub const DEFAULT_BONNIE_CACHE_PATH: &str = "./.bonnie.cache.json";
+pub const DEFAULT_BX_CACHE_PATH: &str = "./.bx.cache.json";
 
-// Gets the path to the cache file based on given environment variables
-// This will return an error if the `BONNIE_CACHE` environment variable is set, but is invalid
-fn get_cache_path() -> Result<String, String> {
-	// Get the `BONNIE_CACHE` variable
-	let given_path = env::var("BONNIE_CACHE");
-	match given_path {
-        Ok(path) => Ok(path),
-        Err(env::VarError::NotUnicode(_)) => Err(String::from("The path to your Bonnie cache file given in the 'BONNIE_CACHE' environment variable contained invalid characters. Please make sure it only contains valid Unicode.")),
-        Err(env::VarError::NotPresent) => Ok(DEFAULT_BONNIE_CACHE_PATH.to_string()) // If the env var wasn't found, then use the default
-    }
+fn get_cache_path() -> Result<String> {
+	match env::var("BX_CACHE") {
+		Ok(path) => return Ok(path),
+		Err(env::VarError::NotUnicode(_)) => {
+			bail!("The cache file path in 'BX_CACHE' environment variable contained invalid characters. Please make sure it only contains valid Unicode.")
+		}
+		Err(env::VarError::NotPresent) => {}
+	}
+	match env::var("BONNIE_CACHE") {
+		Ok(path) => Ok(path),
+		Err(env::VarError::NotUnicode(_)) => {
+			bail!("The cache file path in 'BONNIE_CACHE' environment variable contained invalid characters. Please make sure it only contains valid Unicode.")
+		}
+		Err(env::VarError::NotPresent) => Ok(DEFAULT_BX_CACHE_PATH.to_string()),
+	}
 }
 
 // Serializes the given parsed configuration into a JSON string and write it to disk to speed up future execution
@@ -25,30 +29,26 @@ pub fn cache(
 	cfg: &schema::Config,
 	output: &mut impl std::io::Write,
 	raw_cache_path: Option<&str>,
-) -> Result<(), String> {
+) -> Result<()> {
 	let cache_path = match raw_cache_path {
 		Some(cache_path) => cache_path.to_string(),
 		None => get_cache_path()?,
 	};
-	let cache_str = serde_json::to_string(cfg);
-	let cache_str = match cache_str {
-        Ok(cache_str) => cache_str,
-        Err(err) => return Err(format!("The following error occurred while attempting to cache your parsed Bonnie configuration: '{}'.", err))
-    };
-	let res = fs::write(&cache_path, cache_str);
-	if let Err(err) = res {
-		return Err(format!("The following error occurred while attempting to write your cached Bonnie configuration to '{}': '{}'.", &cache_path, err));
-	}
+	let cache_str = serde_json::to_string(cfg).context(
+		"The following error occurred while attempting to cache your parsed bx configuration",
+	)?;
+	fs::write(&cache_path, cache_str)
+		.with_context(|| format!("The following error occurred while attempting to write your cached bx configuration to '{}'", &cache_path))?;
 
 	writeln!(
         output,
-        "Your Bonnie configuration has been successfully cached to '{}'! This will be used to speed up future execution. Please note that this cache will NOT be updated until you explicitly run `bonnie -c` again.",
+        "Your bx configuration has been successfully cached to '{}'! This will be used to speed up future execution. Please note that this cache will NOT be updated until you explicitly run `bx -c` again.",
         cache_path
     ).expect("Failed to write caching message.");
 	Ok(())
 }
 
-pub fn cache_exists() -> Result<bool, String> {
+pub fn cache_exists() -> Result<bool> {
 	let exists = fs::metadata(get_cache_path()?).is_ok();
 	Ok(exists)
 }
@@ -58,24 +58,17 @@ pub fn cache_exists() -> Result<bool, String> {
 pub fn load_from_cache(
 	output: &mut impl std::io::Write,
 	raw_cache_path: Option<&str>,
-) -> Result<schema::Config, String> {
+) -> Result<schema::Config> {
 	let cache_path = match raw_cache_path {
 		Some(cache_path) => cache_path.to_string(),
 		None => get_cache_path()?,
 	};
-	let cfg_str = fs::read_to_string(&cache_path);
-	let cfg_str = match cfg_str {
-        Ok(cfg_str) => cfg_str,
-        Err(err) => return Err(format!("The following error occurred while attempting to read your cached Bonnie configuration at '{}': '{}'.", &cache_path, err))
-    };
+	let cfg_str = fs::read_to_string(&cache_path)
+		.with_context(|| format!("The following error occurred while attempting to read your cached bx configuration at '{}'", &cache_path))?;
 
-	let cfg = serde_json::from_str::<schema::Config>(&cfg_str);
-	let cfg = match cfg {
-        Ok(cfg) => cfg,
-        Err(err) => return Err(format!("The following error occurred while attempting to parse your cached Bonnie configuration at '{}': '{}'. If this persists, you can recache with `bonnie -c`.", &cache_path, err))
-    };
-	// Check the version
-	raw_schema::Config::parse_version_against_current(&cfg.version, BONNIE_VERSION, output)?;
+	let cfg = serde_json::from_str::<schema::Config>(&cfg_str)
+		.with_context(|| format!("The following error occurred while attempting to parse your cached bx configuration at '{}'. If this persists, you can recache with `bx -c`.", &cache_path))?;
+	raw_schema::Config::check_config_version(&cfg.version, output)?;
 	// Load the environment variable files
 	raw_schema::Config::load_env_files(Some(cfg.env_files.clone()))?;
 

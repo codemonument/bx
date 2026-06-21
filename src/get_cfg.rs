@@ -1,5 +1,6 @@
 // This file contains logic to get the actual configuration itself
 
+use anyhow::{Context, Result};
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -7,17 +8,14 @@ use std::path::Path;
 pub const DEFAULT_BX_CFG_PATH: &str = "./bx.toml";
 pub const DEFAULT_BONNIE_CFG_PATH: &str = "./bonnie.toml";
 
-pub fn get_cfg() -> Result<String, String> {
+pub fn get_cfg() -> Result<String> {
 	let path = resolve_cfg_path(
 		env::var("BX_CONF").ok().as_deref(),
 		env::var("BONNIE_CONF").ok().as_deref(),
 		Path::new(DEFAULT_BX_CFG_PATH).exists(),
 	);
-	let cfg_string = fs::read_to_string(&path);
-	match cfg_string {
-		Ok(cfg_string) => Ok(cfg_string),
-		Err(_) => Err(format!("Error reading configuration file at '{}', make sure the file is present in this directory and you have the permissions to read it.", path))
-	}
+	fs::read_to_string(&path)
+		.with_context(|| format!("Error reading configuration file at '{}', make sure the file is present in this directory and you have the permissions to read it.", path))
 }
 
 pub fn resolve_cfg_path(
@@ -36,6 +34,16 @@ pub fn resolve_cfg_path(
 	} else {
 		DEFAULT_BONNIE_CFG_PATH.to_string()
 	}
+}
+
+pub fn resolve_init_cfg_path(bx_conf: Option<&str>, bonnie_conf: Option<&str>) -> String {
+	if let Some(path) = bx_conf {
+		return path.to_string();
+	}
+	if let Some(path) = bonnie_conf {
+		return path.to_string();
+	}
+	DEFAULT_BX_CFG_PATH.to_string()
 }
 
 #[cfg(test)]

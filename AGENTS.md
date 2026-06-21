@@ -105,6 +105,17 @@ Established pattern is `Result<T, String>` and user-facing error messages.
 - Conventional Commits are used for releases (see `.versionrc.json`).
 - CI expects clean formatting + clippy (same as `bx check`).
 
+## Releasing a New Version
+When releasing a new version:
+1. Create a git tag following semantic versioning: `v<major>.<minor>.<patch>` (e.g., `v0.4.1`)
+2. Push the tag to remote: `git push origin v<version>`
+
+Example:
+```bash
+git tag v0.4.1
+git push origin v0.4.1
+```
+
 ## Cursor/Copilot Rules
 - No `.cursor/rules/`, `.cursorrules`, or `.github/copilot-instructions.md` found.
 

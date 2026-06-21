@@ -97,7 +97,8 @@ sudo mv bx /usr/local/bin/
 ### In Docker
 
 ```dockerfile
-RUN curl -L https://github.com/codemonument/bx/releases/download/v0.4.0/bx-linux-amd64 \
+# Replace VERSION with the desired release (e.g., v0.4.1)
+RUN curl -L https://github.com/codemonument/bx/releases/download/VERSION/bx-linux-amd64 \
     -o /usr/local/bin/bx && chmod +x /usr/local/bin/bx
 ```
 

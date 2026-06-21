@@ -1,11 +1,11 @@
 ---
 # bx-bqd6
 title: Upgrade Rust edition from 2018 to 2021
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-22T10:46:24Z
-updated_at: 2026-01-22T10:46:24Z
+updated_at: 2026-01-22T12:20:50Z
 ---
 
 Upgrade the Rust edition from 2018 to 2021 for access to newer language features.
@@ -17,12 +17,12 @@ Upgrade the Rust edition from 2018 to 2021 for access to newer language features
 - Access to newer language patterns
 
 ## Checklist
-- [ ] Run `cargo fix --edition` to auto-fix compatibility issues
-- [ ] Update Cargo.toml: change `edition = "2018"` to `edition = "2021"`
-- [ ] Run `cargo build` to check for issues
-- [ ] Run `cargo test` to verify all tests pass
-- [ ] Run `cargo clippy` to check for new warnings
-- [ ] Address any compiler warnings or errors
+- [x] Run `cargo fix --edition` to auto-fix compatibility issues
+- [x] Update Cargo.toml: change `edition = "2018"` to `edition = "2021"`
+- [x] Run `cargo build` to check for issues
+- [x] Run `cargo test` to verify all tests pass
+- [x] Run `cargo clippy` to check for new warnings
+- [x] Address any compiler warnings or errors (none needed)
 
 ## Notes
 - This is low priority and can be deferred

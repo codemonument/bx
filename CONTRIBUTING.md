@@ -1,6 +1,6 @@
 # Contributing
 
-First off, thanks so much for taking the time to contribute to Bonnie, it's greatly appreciated!
+First off, thanks so much for taking the time to contribute to bx, it's greatly appreciated!
 
 ## I just want to propose something
 
@@ -8,7 +8,7 @@ If you just want to let us know about a bug, or propose a new feature, please op
 
 ## What should I work on?
 
-You can check out the [roadmap](./README.md#Roadmap) or the [issues](https://github.com/arctic-hen7/bonnie/issues) to see what's currently needing to be done. If you want to work on something that's not on there, please file an issue and we'll take a look it as soon as possible!
+You can check out the [roadmap](./README.md#Roadmap) or the [issues](https://github.com/codemonument/bx/issues) to see what's currently needing to be done. If you want to work on something that's not on there, please file an issue and we'll take a look it as soon as possible!
 
 ## How do I contribute?
 
