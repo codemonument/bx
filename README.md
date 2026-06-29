@@ -172,6 +172,8 @@ You can also load from `.env` files:
 files = [".env", ".env.local"]
 ```
 
+The `.env` files in this repository are examples used by tests and documentation. This repo does not require Varlock or `jb-dev-env` treatment.
+
 ### Multistage Commands
 
 Run multiple commands in sequence:
